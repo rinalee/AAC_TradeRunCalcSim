@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArcheAge Chronicles — Trading Post Info & Route Estimator</title>
+  <style>
+    :root {
+      --bg-void: #12110f;
+      --bg-panel: #191815;
+      --bg-row: #1f1d19;
+      --bg-row-hover: #282520;
+      --bg-active: #ddd8c8;
+      --text-active: #181613;
+      --text-primary: #e8e4d8;
+      --text-secondary: #9d9689;
+      --text-muted: #6e685e;
+      --border-subtle: #35312b;
+      --border-strong: #534c42;
+      --gold: #d4ad5a;
+      --gold-dim: rgba(212, 173, 90, 0.14);
+      --profit-pos: #84b384;
+      --profit-neg: #cf7365;
+      --item-accent: #8fa998;
+      --item-dim: rgba(143, 169, 152, 0.14);
+      --warn: #c89d54;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      background-image:
+        radial-gradient(circle at 20% 0%, rgba(56, 51, 42, 0.25) 0%, transparent 55%),
+        radial-gradient(circle at 85% 100%, rgba(44, 40, 33, 0.22) 0%, transparent 50%);
+      color: var(--text-primary);
+      font-family: Georgia, "Times New Roman", "Palatino Linotype", serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .top-bar {
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(18, 17, 15, 0.94);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .diamond-icon {
+      width: 11px;
+      height: 11px;
+      border: 1px solid var(--gold);
+      transform: rotate(45deg);
+      display: inline-block;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 2px var(--bg-void), inset 0 0 0 4px var(--gold);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: normal;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      border-left: 1px solid var(--border-subtle);
+      padding-left: 12px;
+    }
+
+    .sync-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      flex-wrap: wrap;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      display: inline-block;
+    }
+
+    .status-dot.live {
+      background: #7da67d;
+      box-shadow: 0 0 6px rgba(125, 166, 125, 0.6);
+    }
+
+    .status-dot.fallback {
+      background: var(--warn);
+    }
+
+    .status-dot.error {
+      background: #c96b5b;
+    }
+
+    .btn-ghost {
+      background: var(--bg-row);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 10px;
+      font-family: inherit;
+      font-size: 0.78rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-row-hover);
+      border-color: var(--border-strong);
+    }
+
+    .key-cap {
+      display: inline-block;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-void);
+      color: var(--text-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.68rem;
+      padding: 1px 5px;
+      line-height: 1.2;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 20px 24px 36px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .estimator-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      padding: 18px 20px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field-label {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      background: var(--bg-row);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 0.92rem;
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+      border-radius: 0;
+    }
+
+    select:hover, input[type="text"]:hover,
+    select:focus, input[type="text"]:focus {
+      border-color: var(--bg-active);
+      background: var(--bg-row-hover);
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      padding: 16px;
+    }
+
+    .tabs-bar {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 8px 6px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--bg-active);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .pill {
+      background: var(--bg-row);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 4px 9px;
+      cursor: pointer;
+    }
+
+    .pill.active {
+      background: var(--bg-active);
+      color: var(--text-active);
+      border-color: var(--bg-active);
+      font-weight: bold;
+    }
+
+    .goods-list {
+      max-height: 540px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding-right: 4px;
+    }
+
+    .goods-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .goods-list::-webkit-scrollbar-track {
+      background: var(--bg-void);
+    }
+    .goods-list::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+    }
+
+    .good-row {
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      height: 58px;
+      min-height: 58px;
+      max-height: 58px;
+      background: var(--bg-row);
+      border: 1px solid var(--border-subtle);
+      padding: 8px 12px 8px 66px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      text-align: left;
+      color: var(--text-primary); /* override button UA black */
+    }
+
+    .good-row-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 68px;
+      height: 58px;
+      object-fit: contain;
+      object-position: left center;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 1;
+      -webkit-mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+      mask-image: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 80%, rgba(0, 0, 0, 0) 100%);
+      transition: filter 0.15s;
+    }
+
+    .good-row:hover .good-row-bg {
+      filter: brightness(1.08);
+    }
+
+    .good-row.selected .good-row-bg {
+      opacity: 0.92;
+    }
+
+    .good-row-left,
+    .good-reward-tag {
+      position: relative;
+      z-index: 1;
+    }
+
+    .good-row:not(.selected) .good-name {
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+    }
+
+    .good-row:not(.selected) .good-origin {
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+    }
+
+    .good-row:hover {
+      background: var(--bg-row-hover);
+      border-color: var(--border-strong);
+    }
+
+    .good-row.selected {
+      background: var(--bg-active);
+      border-color: var(--bg-active);
+      color: var(--text-active);
+    }
+
+    .good-row-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .good-origin {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    .good-row.selected .good-origin {
+      color: #4f4a40;
+    }
+
+    .good-name {
+      font-size: 0.88rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-primary); /* light grey/beige when not selected */
+    }
+
+    .good-row.selected .good-name {
+      color: var(--text-active); /* black only when selected */
+    }
+    .good-reward-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.76rem;
+      white-space: nowrap;
+      padding: 2px 6px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(18, 17, 15, 0.55);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .good-reward-tag.gold {
+      color: var(--gold);
+      border-color: rgba(212, 173, 90, 0.35);
+    }
+
+    .good-row.selected .good-reward-tag {
+      background: rgba(24, 22, 19, 0.12);
+      border-color: rgba(24, 22, 19, 0.25);
+      color: var(--text-active);
+      font-weight: bold;
+    }
+
+    .good-row.selected .good-reward-tag.gold {
+      background: rgba(24, 22, 19, 0.88);
+      border-color: rgba(212, 173, 90, 0.8);
+      color: var(--gold);
+      font-weight: bold;
+    }
+
+    .detail-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .info-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      padding: 20px 22px;
+    }
+
+    .info-title {
+      font-size: 1.25rem;
+      font-weight: normal;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .info-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+    }
+
+    .info-meta-table td {
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(53, 49, 43, 0.55);
+      font-size: 0.9rem;
+    }
+
+    .info-meta-table td:first-child {
+      color: var(--text-secondary);
+      width: 190px;
+    }
+
+    .cost-box {
+      background: var(--bg-row);
+      border: 1px solid var(--border-subtle);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cost-row-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .mats-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .mat-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      background: rgba(143, 169, 152, 0.12);
+      border: 1px solid rgba(143, 169, 152, 0.35);
+      color: #c8dcd0;
+    }
+
+    .reward-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+    }
+
+    .reward-box {
+      background: var(--bg-row);
+      border: 1px solid var(--border-strong);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .reward-box.is-gold {
+      background: linear-gradient(135deg, var(--gold-dim) 0%, var(--bg-row) 75%);
+      border-color: rgba(212, 173, 90, 0.45);
+    }
+
+    .reward-box.is-item {
+      background: linear-gradient(135deg, var(--item-dim) 0%, var(--bg-row) 75%);
+      border-color: rgba(143, 169, 152, 0.45);
+    }
+
+    .reward-label {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .reward-value {
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+    }
+
+    .coin-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 21px;
+      height: 21px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #181613;
+      font-weight: bold;
+      font-size: 0.75rem;
+      font-family: Georgia, serif;
+      flex-shrink: 0;
+    }
+
+    .reward-gold-text {
+      color: var(--gold);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.02em;
+    }
+
+    .reward-item-text {
+      color: #c8dcd0;
+    }
+
+    .reward-sub {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    .profit-pos {
+      color: var(--profit-pos);
+    }
+
+    .profit-neg {
+      color: var(--profit-neg);
+    }
+
+    .game-note {
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: var(--warn);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+
+    .comp-table th {
+      text-align: left;
+      color: var(--text-secondary);
+      font-weight: normal;
+      font-size: 0.78rem;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-strong);
+    }
+
+    .comp-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .comp-table tr {
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .comp-table tbody tr:hover {
+      background: var(--bg-row-hover);
+    }
+
+    .comp-table tbody tr.current-dest {
+      background: rgba(221, 216, 200, 0.1);
+    }
+
+    .comp-table tbody tr.current-dest td:first-child {
+      color: var(--bg-active);
+      font-weight: bold;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .text-gold {
+      color: var(--gold);
+    }
+
+    .text-item {
+      color: #b4cbbd;
+    }
+
+
+    .run-slots {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .run-slot {
+      background: var(--bg-row);
+      border: 1px dashed var(--border-subtle);
+      height: 76px;
+      padding: 6px 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      cursor: default;
+    }
+
+    .run-slot-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      z-index: 0;
+      opacity: 0.85;
+      pointer-events: none;
+    }
+
+    .run-slot.filled::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(18, 17, 15, 0.88) 0%, rgba(18, 17, 15, 0.35) 58%, rgba(18, 17, 15, 0.15) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .run-slot .run-slot-name,
+    .run-slot .run-slot-price,
+    .run-slot .run-slot-idx {
+      position: relative;
+      z-index: 2;
+    }
+
+    .run-slot .run-slot-remove {
+      z-index: 3;
+      background: rgba(18, 17, 15, 0.72);
+      border-radius: 2px;
+    }
+
+    .run-slot.filled .run-slot-name {
+      font-size: 0.68rem;
+      line-height: 1.15;
+      color: var(--text-primary);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.98);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .run-slot.filled .run-slot-price {
+      font-size: 0.66rem;
+      line-height: 1.1;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.98);
+    }
+
+    .run-slot.filled {
+      border-style: solid;
+      border-color: var(--border-strong);
+      background: var(--bg-row-hover);
+    }
+
+    .run-slot-idx {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .run-slot-name {
+      font-size: 0.72rem;
+      line-height: 1.25;
+      color: var(--text-primary);
+      word-break: break-word;
+    }
+
+    .run-slot-price {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.7rem;
+      color: var(--gold);
+    }
+
+    .run-slot-remove {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      line-height: 1;
+      padding: 2px 4px;
+    }
+
+    .run-slot-remove:hover {
+      color: var(--profit-neg);
+    }
+
+    .run-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+
+    .run-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+    }
+
+    .run-stat {
+      background: var(--bg-row);
+      border: 1px solid var(--border-subtle);
+      padding: 10px 12px;
+    }
+
+    .run-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .run-stat-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 1.05rem;
+    }
+
+    .run-capacity {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    @media (max-width: 960px) {
+      .run-slots {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .run-slots {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .footer-bar {
+      border-top: 1px solid var(--border-subtle);
+      background: rgba(18, 17, 15, 0.95);
+      padding: 10px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .shortcuts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .shortcut-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .empty-msg {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      padding: 18px 0;
+      text-align: center;
+    }
+
+    @media (max-width: 960px) {
+      .controls-grid {
+        grid-template-columns: 1fr;
+      }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .goods-list {
+        max-height: 320px;
+      }
+    }
+  </style>
+<script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjBhYTJlOTdhY2JlMTI3ODk2MDAwNjYwYjNhYzAxYjkzNjA0YTQ0Y2I1MzEzNGIxODgSCxIHEKaX9q3tHhgB%26filename%3Dtrade_run_2-v5.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
+<body>
+
+  <header class="top-bar">
+    <div class="brand">
+      <span class="diamond-icon"></span>
+      <h1 class="brand-title">Trading Post Info</h1>
+      <span class="brand-sub">ArcheAge Chronicles — Trade Run Estimator</span>
+    </div>
+    <div class="sync-status">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText">Initializing...</span>
+      <button id="refreshBtn" class="btn-ghost" title="Reload live CSV data">
+        <span class="key-cap">R</span> Refresh Sheet
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="estimator-panel">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="diamond-icon" style="width:8px;height:8px;"></span>
+          <span>Route Configuration</span>
+        </div>
+        <button id="swapBtn" class="btn-ghost" title="Swap Departure & Arrival Outposts">
+          <span class="key-cap">X</span> Swap Outposts
+        </button>
+      </div>
+
+      <div class="controls-grid">
+        <div class="field-group">
+          <label class="field-label" for="originSelect">
+            <span>Departure / Dispatch Outpost</span>
+            <span id="originCount"></span>
+          </label>
+          <select id="originSelect">
+            <option value="ALL">All Outposts / Regions</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="goodSelect">
+            <span>Trade Good (Pack)</span>
+            <span id="goodCount"></span>
+          </label>
+          <select id="goodSelect"></select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="destSelect">
+            <span>Arrival Trading Post (Sell At)</span>
+            <span id="destCount"></span>
+          </label>
+          <select id="destSelect"></select>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <aside class="panel">
+        <div id="saleControls">
+          <div class="filter-pills">
+            <button class="pill active" data-filter="all">All</button>
+            <button class="pill" data-filter="gold">Gold Only</button>
+            <button class="pill" data-filter="item">Items / Mats</button>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <input type="text" id="searchInput" placeholder="Filter pack or origin region..." />
+          </div>
+        </div>
+
+        <div id="leftList" class="goods-list">
+          <div class="empty-msg">Loading trading post data...</div>
+        </div>
+      </aside>
+
+      <section class="detail-stack">
+        <div class="info-card">
+          <div class="info-title">
+            <span id="detailGoodName">—</span>
+            <span id="detailRouteBadge" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+          </div>
+
+          <table class="info-meta-table">
+            <tr>
+              <td>Item Name</td>
+              <td id="metaItemName">—</td>
+            </tr>
+            <tr>
+              <td>Trademark Region</td>
+              <td id="metaRegion">—</td>
+            </tr>
+            <tr>
+              <td>Dispatched From</td>
+              <td id="metaDispatchOutpost">—</td>
+            </tr>
+            <tr>
+              <td>Selling Destination</td>
+              <td id="metaDestOutpost">—</td>
+            </tr>
+          </table>
+
+          <div id="costSection" class="cost-box" style="display:none;">
+            <div class="cost-row-line">
+              <span class="reward-label" style="margin:0;">Cost / Packing Cost</span>
+              <span id="buyPriceText" class="mono text-gold" style="font-size:1.05rem;">—</span>
+            </div>
+            <div id="matsRow" style="display:none; flex-direction:column; gap:4px;">
+              <span class="reward-label" style="margin:0;">Materials Required</span>
+              <div id="matsList" class="mats-list"></div>
+            </div>
+          </div>
+
+          <div class="reward-label">Estimated Rewards & Net Profit (Based on Standard Market Prices)</div>
+          <div class="reward-grid">
+            <div id="rewardBox" class="reward-box">
+              <div>
+                <div class="reward-label">Gross Payout</div>
+                <div class="reward-value" id="rewardValue">—</div>
+              </div>
+              <div class="reward-sub" id="rewardSub"></div>
+            </div>
+
+            <div id="profitBox" class="reward-box" style="display:none;">
+              <div>
+                <div class="reward-label">Net Profit (After Gold Buy Price)</div>
+                <div class="reward-value" id="profitValue">—</div>
+              </div>
+              <div class="reward-sub" id="profitSub"></div>
+            </div>
+          </div>
+
+          <div class="game-note">
+            <span>!</span>
+            <span>Selling non-primary trade goods yields gold only, at a reduced price.</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="section-header" style="margin-bottom: 10px;">
+            <div class="section-title">
+              <span>Destination Comparison for Selected Pack</span>
+            </div>
+            <span style="font-size:0.75rem; color:var(--text-secondary);">Click a row to select destination</span>
+          </div>
+
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Arrival Trading Post</th>
+                <th>Reward Type</th>
+                <th>Gross Payout</th>
+                <th>Avg Gold</th>
+                <th id="profitColHeader">Net Profit (Avg)</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonBody"></tbody>
+          </table>
+        </div>
+
+        <div class="info-card" id="runSimulatorCard">
+          <div class="section-header" style="margin-bottom: 12px;">
+            <div class="section-title">
+              <span class="diamond-icon" style="width:8px;height:8px;"></span>
+              <span>Trade Run Simulation</span>
+            </div>
+            <span class="run-capacity" id="runCapacityLabel">0 / 7 packs</span>
+          </div>
+
+          <div class="run-actions">
+            <button type="button" id="runAddOneBtn" class="btn-ghost" title="Add currently selected pack">+ Add Selected Pack</button>
+            <button type="button" id="runFillBtn" class="btn-ghost" title="Fill remaining slots with selected pack">Fill ×7 with Selected</button>
+            <button type="button" id="runClearBtn" class="btn-ghost" title="Clear all slots">Clear Run</button>
+          </div>
+
+          <div class="run-slots" id="runSlots"></div>
+
+          <div class="reward-label" style="margin-bottom: 8px;">Run Totals (at selected Arrival · based on avg market)</div>
+          <div class="run-summary">
+            <div class="run-stat">
+              <div class="run-stat-label">Total Buy Cost</div>
+              <div class="run-stat-value text-gold" id="runTotalCost">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Gross Payout (min ~ max)</div>
+              <div class="run-stat-value text-gold" id="runGrossRange">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Gross Avg</div>
+              <div class="run-stat-value text-gold" id="runGrossAvg">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Net Profit (Avg)</div>
+              <div class="run-stat-value" id="runNetAvg">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">ROI (Avg)</div>
+              <div class="run-stat-value" id="runRoi">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Item Rewards</div>
+              <div class="run-stat-value text-item" id="runItems" style="font-size:0.85rem; font-family:inherit;">—</div>
+            </div>
+          </div>
+          <div class="game-note" style="margin-top:12px;">
+            <span>!</span>
+            <span>Wagon capacity: 7 packs per run. Gold rewards use sheet min/max ranges; item rewards are listed separately and not converted to gold.</span>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer-bar">
+    <div class="shortcuts">
+      <span class="shortcut-item"><span class="key-cap">R</span> Reload Google Sheet</span>
+      <span class="shortcut-item"><span class="key-cap">X</span> Swap Outposts</span>
+      <span class="shortcut-item"><span class="key-cap">/</span> Focus Search</span>
+    </div>
+    <div id="footerSource">Google Sheet CSV</div>
+  </footer>
+
+  <script>
+    const SHEET_CSV_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?output=csv";
+
+    // Optional: set a dedicated published CSV URL for Lookup if published separately, or leave "" to check combined/embedded Lookup
+    const LOOKUP_CSV_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?gid=2129492780&single=true&output=csv";
+
+    const EMBEDDED_MAIN_ROWS = [["Trading Post Info", "", "", "", ""], ["Seaglass Harbor Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Diamond Shores Herb Box", "Watcher's Trading Post", "Watermelon Seedling", "", "Bluesalt Brotherhood Trade Goods"], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1560~2184G", "", "Refined Barley Sack"], ["Antiquary Society Trade Goods", "Stargazer Village", "3000~4200G", "", "Michelan's Gourmet Seasoning Box"], ["Starch Sack", "Stargazer Village", "44753~62654G", "", "Standard Lumber Trade Goods"], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "38084~53318G", "", "Fine Lumber Trade Goods"], ["Grain Spirits Crate", "Jubilant Village", "41067~57494G", "", "Superior Lumber Trade Goods"], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "49140~68796G", "", "Old Gladiator's Legacy Case"], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "Standard Lumber", "", "Shatigon's Hammer Case"], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "Fine Lumber", "", "Brilliant Weapon Tempering Stone Chest"], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "Superior Lumber", "", "Charged Lightning Chest"], ["Standard Leather Trade Goods", "Jubilant Village", "Standard Lumber", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "Fine Lumber", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "Superior Lumber", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "Standard Lumber", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "Fine Lumber", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "Superior Lumber", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "Standard Lumber", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "Fine Lumber", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "Superior Lumber", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "Standard Lumber", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "Fine Lumber", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "Superior Lumber", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "Standard Lumber", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "Fine Lumber", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "Superior Lumber", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "Shatigon's Hammer", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "Old Gladiator's Legacy", "", ""], ["Constellation Horn Case", "Jubilant Village", "Old Gladiator's Legacy", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "Old Gladiator's Legacy", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "Old Gladiator's Legacy", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "Shatigon's Hammer", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "Brilliant Weapon Tempering Stone", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "Vivid Weapon Box", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "Vivid Armor Box", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "Crackling War Club", "", ""], ["Compressed Fire Chest", "Jubilant Village", "Crackling War Club", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "Crackling War Club", "", ""], ["Dormant Ice Chest", "Stargazer Village", "Crackling War Club", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "Watermelon Seedling", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "Watermelon Seedling", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "Crackling War Club", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "Vivid Weapon Box", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "Vivid Armor Box", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "Shatigon's Hammer", "", ""], ["", "", "", "", ""], ["Watcher's Harbor Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "2070~2898G", "", "Diamond Shores Herb Box"], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1380~1932G", "", "Standard Additive Trade Box"], ["Antiquary Society Trade Goods", "Stargazer Village", "2800~3920G", "", "Fine Additive Trade Box"], ["Refined Barley Sack", "Seaglass Harbor", "9653~13514G", "", "Superior Additive Trade Box"], ["Starch Sack", "Stargazer Village", "41769~58477G", "", "Vanguard Armor Case"], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "36723~51412G", "", "Tempered Iron Plating Chest"], ["Grain Spirits Crate", "Jubilant Village", "37908~53071G", "", "Faint Weapon Tempering Stone Chest"], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "46069~64497G", "", ""], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "Standard Additive", "", ""], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "Fine Additive", "", ""], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "Superior Additive", "", ""], ["Standard Lumber Trade Goods", "Seaglass Harbor", "Standard Additive", "", ""], ["Fine Lumber Trade Goods", "Seaglass Harbor", "Fine Additive", "", ""], ["Superior Lumber Trade Goods", "Seaglass Harbor", "Superior Additive", "", ""], ["Standard Leather Trade Goods", "Jubilant Village", "Standard Additive", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "Fine Additive", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "Superior Additive", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "Standard Additive", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "Fine Additive", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "Superior Additive", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "Standard Additive", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "Fine Additive", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "Superior Additive", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "Standard Additive", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "Fine Additive", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "Superior Additive", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "Vanguard Armor", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "Vanguard Armor", "", ""], ["Constellation Horn Case", "Jubilant Village", "Vanguard Armor", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "Vanguard Armor", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "Vanguard Armor", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "Vanguard Armor", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "Vanguard Armor", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "Faint Weapon Tempering Stone", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "Faint Weapon Tempering Stone", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "Faint Weapon Tempering Stone", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "Faint Weapon Tempering Stone", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "Shattered Armor Plate", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "Shattered Armor Plate", "", ""], ["Compressed Fire Chest", "Jubilant Village", "Shattered Armor Plate", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "Shattered Armor Plate", "", ""], ["Dormant Ice Chest", "Stargazer Village", "Shattered Armor Plate", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "171816~240542G", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "Pumpkin Seedling", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "Pumpkin Seedling", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "Faint Weapon Tempering Stone", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "Vanguard Armor", "", ""], ["", "", "", "", ""], ["Jubilant Village Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "2340~3276G", "", "Shadowhawk Syndicate Trade Goods"], ["Diamond Shores Herb Box", "Watcher's Trading Post", "Corn Seedling", "", "Grain Spirits Crate"], ["Antiquary Society Trade Goods", "Stargazer Village", "2700~3780G", "", "Standard Leather Trade Goods"], ["Refined Barley Sack", "Seaglass Harbor", "11408~15971G", "", "Fine Leather Trade Goods"], ["Starch Sack", "Stargazer Village", "40277~56388G", "", "Superior Leather Trade Goods"], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "35363~49508G", "", "Gyldenlord's Curse Case"], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "44533~62345G", "", "Constellation Horn Case"], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "Standard Leather", "", "Compressed Fire Chest"], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "Fine Leather", "", "Faint Armor Tempering Stone Chest"], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "Superior Leather", "", ""], ["Standard Lumber Trade Goods", "Seaglass Harbor", "Standard Leather", "", ""], ["Fine Lumber Trade Goods", "Seaglass Harbor", "Fine Leather", "", ""], ["Superior Lumber Trade Goods", "Seaglass Harbor", "Superior Leather", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "Standard Leather", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "Fine Leather", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "Superior Leather", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "Standard Leather", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "Fine Leather", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "Superior Leather", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "Standard Leather", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "Fine Leather", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "Superior Leather", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "Standard Leather", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "Fine Leather", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "Superior Leather", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "Constellation Horn", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "Gyldenlord's Curse", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "Constellation Horn", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "Gyldenlord's Curse", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "Gyldenlord's Curse", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "Gyldenlord's Curse", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "Faint Armor Tempering Stone", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "Faint Armor Tempering Stone", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "Faint Armor Tempering Stone", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "Faint Armor Tempering Stone", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "Undying Flame", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "Undying Flame", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "Undying Flame", "", ""], ["Dormant Ice Chest", "Stargazer Village", "Undying Flame", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "203055~284277G", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "Corn Seedling", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "Corn Seedling", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "Undying Flame", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "Faint Armor Tempering Stone", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "Gyldenlord's Curse", "", ""], ["", "", "", "", ""], ["Waterdrift Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "2520~3528G", "", "Gylden Ruins Herb Box"], ["Diamond Shores Herb Box", "Watcher's Trading Post", "Cabbage Seedling", "", "Golden Pickled Vegetable Crate"], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1560~2184G", "", "Standard Ingot Trade Goods"], ["Antiquary Society Trade Goods", "Stargazer Village", "2500~3500G", "", "Fine Ingot Trade Goods"], ["Refined Barley Sack", "Seaglass Harbor", "12285~17199G", "", "Superior Ingot Trade Goods"], ["Starch Sack", "Stargazer Village", "37294~52212G", "", "Howling Sandstorm Case"], ["Grain Spirits Crate", "Jubilant Village", "41067~57494G", "", "Vivid Weapon Tempering Stone Chest"], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "41462~58047G", "", "Tranquil Wind Chest"], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "Standard Ingot", "", ""], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "Fine Ingot", "", ""], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "Superior Ingot", "", ""], ["Standard Lumber Trade Goods", "Seaglass Harbor", "Standard Ingot", "", ""], ["Fine Lumber Trade Goods", "Seaglass Harbor", "Fine Ingot", "", ""], ["Superior Lumber Trade Goods", "Seaglass Harbor", "Superior Ingot", "", ""], ["Standard Leather Trade Goods", "Jubilant Village", "Standard Ingot", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "Fine Ingot", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "Superior Ingot", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "Standard Ingot", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "Fine Ingot", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "Superior Ingot", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "Standard Ingot", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "Fine Ingot", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "Superior Ingot", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "Standard Ingot", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "Fine Ingot", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "Superior Ingot", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "Howling Sandstorm", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "Howling Sandstorm", "", ""], ["Constellation Horn Case", "Jubilant Village", "Howling Sandstorm", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "Howling Sandstorm", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "Howling Sandstorm", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "Howling Sandstorm", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "Howling Sandstorm", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "Vivid Weapon Tempering Stone", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "Vivid Weapon Tempering Stone", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "Vivid Weapon Tempering Stone", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "Wind Blade Claws", "", ""], ["Compressed Fire Chest", "Jubilant Village", "Wind Blade Claws", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "Wind Blade Claws", "", ""], ["Dormant Ice Chest", "Stargazer Village", "Wind Blade Claws", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "218673~306142G", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "Cabbage Seedling", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "Wind Blade Claws", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "Vivid Weapon Box", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "Vivid Armor Box", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "Howling Sandstorm", "", ""], ["", "", "", "", ""], ["Stargazer Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "2700~3780G", "", "Antiquary Society Trade Goods"], ["Diamond Shores Herb Box", "Watcher's Trading Post", "Wheat Seedling", "", "Starch Sack"], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1680~2352G", "", "Standard Textile Trade Goods"], ["Refined Barley Sack", "Seaglass Harbor", "13163~18428G", "", "Fine Textile Trade Goods"], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "34003~47604G", "", "Superior Textile Trade Goods"], ["Grain Spirits Crate", "Jubilant Village", "44266~61916G", "", "Foundations of Elven Meditation Case"], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "36855~51597G", "", "Vivid Armor Tempering Stone Chest"], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "Standard Textile", "", "Dormant Ice Chest"], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "Fine Textile", "", "Dark Sorcery Catalyst Case"], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "Superior Textile", "", ""], ["Standard Lumber Trade Goods", "Seaglass Harbor", "Standard Textile", "", ""], ["Fine Lumber Trade Goods", "Seaglass Harbor", "Fine Textile", "", ""], ["Superior Lumber Trade Goods", "Seaglass Harbor", "Superior Textile", "", ""], ["Standard Leather Trade Goods", "Jubilant Village", "Standard Textile", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "Fine Textile", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "Superior Textile", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "Standard Textile", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "Fine Textile", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "Superior Textile", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "Standard Textile", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "Fine Textile", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "Superior Textile", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "Standard Textile", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "Fine Textile", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "Superior Textile", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "Foundations of Elven Meditation", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "Foundations of Elven Meditation", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "Dark Sorcery Catalyst", "", ""], ["Constellation Horn Case", "Jubilant Village", "Foundations of Elven Meditation", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "Foundations of Elven Meditation", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "Dark Sorcery Catalyst", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "Foundations of Elven Meditation", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "Vivid Armor Tempering Stone", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "Vivid Armor Tempering Stone", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "Vivid Armor Tempering Stone", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "Frostbound Serpent Scale", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "Frostbound Serpent Scale", "", ""], ["Compressed Fire Chest", "Jubilant Village", "Frostbound Serpent Scale", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "Frostbound Serpent Scale", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "234294~328012G", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "Wheat Seedling", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "Wheat Seedling", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "Frostbound Serpent Scale", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "Vivid Weapon Box", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "Vivid Armor Box", "", ""], ["", "", "", "", ""], ["Shadowpath Temple Trading Post", "", "", "", ""], ["Trade Goods for Sale", "Trademark Region", "Estimated Rewards", "", "Dispatch Trade Goods"], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "2880~4032G", "", "Astron Plains Herb Box"], ["Diamond Shores Herb Box", "Watcher's Trading Post", "Watermelon Seedling", "", "Rainbow Fruit Jam Crate"], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1800~2520G", "", "Standard Archeum Trade Goods"], ["Antiquary Society Trade Goods", "Stargazer Village", "2600~3640G", "", "Uncommon Archeum Trade Goods"], ["Refined Barley Sack", "Seaglass Harbor", "14040~19656G", "", "Superior Archeum Trade Goods"], ["Starch Sack", "Stargazer Village", "35802~50123G", "", "Standard Stone Trade Goods"], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "36723~51412G", "", "Fine Stone Trade Goods"], ["Grain Spirits Crate", "Jubilant Village", "47385~66339G", "", "Superior Stone Trade Goods"], ["Standard Lumber Trade Goods", "Seaglass Harbor", "Standard Archeum", "", "Eternal Nightmare Celtak Case"], ["Fine Lumber Trade Goods", "Seaglass Harbor", "Fine Archeum", "", "Brilliant Armor Tempering Stone Chest"], ["Superior Lumber Trade Goods", "Seaglass Harbor", "Superior Archeum", "", "Refined Poison Chest"], ["Standard Leather Trade Goods", "Jubilant Village", "Standard Stone", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "Fine Stone", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "Superior Stone", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "Standard Stone", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "Fine Stone", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "Superior Stone", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "Standard Stone", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "Fine Stone", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "Superior Stone", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "Standard Archeum", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "Fine Archeum", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "Superior Archeum", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "Brutal Nightmare", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "Brutal Nightmare", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "Brutal Nightmare", "", ""], ["Constellation Horn Case", "Jubilant Village", "Brutal Nightmare", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "Brutal Nightmare", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "Brutal Nightmare", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "Brutal Nightmare", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "Brilliant Armor Tempering Stone", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "Vivid Weapon Box", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "Vivid Armor Box", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "Tainted Flesh", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "Tainted Flesh", "", ""], ["Compressed Fire Chest", "Jubilant Village", "Tainted Flesh", "", ""], ["Dormant Ice Chest", "Stargazer Village", "Tainted Flesh", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "249912~349877G", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "Watermelon Seedling", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "Tainted Flesh", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "Vivid Weapon Box", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "Vivid Armor Box", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "Brutal Nightmare", "", ""]];
+    const EMBEDDED_LOOKUP_ROWS = [["Trade Goods for Sale", "Trademark Region", "", "", "", ""], ["Diamond Shores Herb Box", "Watcher's Trading Post", "1000G", "", "", ""], ["Shadowhawk Syndicate Trade Goods", "Jubilant Village", "1200G", "", "", ""], ["Antiquary Society Trade Goods", "Stargazer Village", "2000G", "", "", ""], ["Starch Sack", "Stargazer Village", "", "", "", ""], ["Golden Pickled Vegetable Crate", "Waterdrift Trading Post", "", "", "", ""], ["Grain Spirits Crate", "Jubilant Village", "", "", "", ""], ["Rainbow Fruit Jam Crate", "Shadowpath Trading Post", "", "", "", ""], ["Standard Archeum Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Uncommon Archeum Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Superior Archeum Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Standard Leather Trade Goods", "Jubilant Village", "", "", "", ""], ["Fine Leather Trade Goods", "Jubilant Village", "", "", "", ""], ["Superior Leather Trade Goods", "Jubilant Village", "", "", "", ""], ["Standard Textile Trade Goods", "Stargazer Village", "", "", "", ""], ["Fine Textile Trade Goods", "Stargazer Village", "", "", "", ""], ["Superior Textile Trade Goods", "Stargazer Village", "", "", "", ""], ["Standard Additive Trade Goods", "Watcher's Trading Post", "", "", "", ""], ["Fine Additive Trade Goods", "Watcher's Trading Post", "", "", "", ""], ["Superior Additive Trade Goods", "Watcher's Trading Post", "", "", "", ""], ["Standard Stone Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Fine Stone Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Superior Stone Trade Goods", "Shadowpath Trading Post", "", "", "", ""], ["Standard Ingot Trade Goods", "Waterdrift Trading Post", "", "", "", ""], ["Fine Ingot Trade Goods", "Waterdrift Trading Post", "", "", "", ""], ["Superior Ingot Trade Goods", "Waterdrift Trading Post", "", "", "", ""], ["Vanguard Armor Case", "Watcher's Trading Post", "", "", "", ""], ["Howling Sandstorm Case", "Waterdrift Trading Post", "", "", "", ""], ["Constellation Horn Case", "Jubilant Village", "", "", "", ""], ["Gyldenlord's Curse Case", "Jubilant Village", "", "", "", ""], ["Eternal Nightmare Celtak Case", "Shadowpath Trading Post", "", "", "", ""], ["Foundations of Elven Meditation Case", "Stargazer Village", "", "", "", ""], ["Brilliant Armor Tempering Stone Chest", "Shadowpath Trading Post", "", "", "", ""], ["Vivid Weapon Tempering Stone Chest", "Waterdrift Trading Post", "", "", "", ""], ["Vivid Armor Tempering Stone Chest", "Stargazer Village", "", "", "", ""], ["Tranquil Wind Chest", "Waterdrift Trading Post", "", "", "", ""], ["Compressed Fire Chest", "Jubilant Village", "", "", "", ""], ["Refined Poison Chest", "Shadowpath Trading Post", "", "", "", ""], ["Dormant Ice Chest", "Stargazer Village", "", "", "", ""], ["Gylden Ruins Herb Box", "Waterdrift Trading Post", "1000G", "", "", ""], ["Astron Plains Herb Box", "Shadowpath Trading Post", "1000G", "", "", ""], ["Tempered Iron Plating Chest", "Watcher's Trading Post", "", "", "", ""], ["Faint Weapon Tempering Stone Chest", "Watcher's Trading Post", "", "", "", ""], ["Faint Armor Tempering Stone Chest", "Jubilant Village", "", "", "", ""], ["Dark Sorcery Catalyst Case", "Stargazer Village", "", "", "", ""], ["Bluesalt Brotherhood Trade Goods", "Seaglass Harbor", "1800G", "", "", ""], ["Refined Barley Sack", "Seaglass Harbor", "", "", "", ""], ["Standard Lumber Trade Goods", "Seaglass Harbor", "", "", "", ""], ["Fine Lumber Trade Goods", "Seaglass Harbor", "", "", "", ""], ["Superior Lumber Trade Goods", "Seaglass Harbor", "", "", "", ""], ["Old Gladiator's Legacy Case", "Seaglass Harbor", "", "", "", ""], ["Shatigon's Hammer Case", "Seaglass Harbor", "", "", "", ""], ["Brilliant Weapon Tempering Stone Chest", "Seaglass Harbor", "", "", "", ""], ["Charged Lightning Chest", "Seaglass Harbor", "", "", "", ""], ["Michelan's Gourmet Seasoning Box", "Seaglass Harbor", "", "", "", ""]];
+
+    function normalizeGoodKey(name) {
+      return name
+        .toLowerCase()
+        .replace(/trade box$/i, "trade goods")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    const REGION_TO_OUTPOST = {
+      "seaglass harbor": "Seaglass Harbor Trading Post",
+      "watcher's trading post": "Watcher's Harbor Trading Post",
+      "watcher's harbor": "Watcher's Harbor Trading Post",
+      "jubilant village": "Jubilant Village Trading Post",
+      "waterdrift trading post": "Waterdrift Trading Post",
+      "stargazer village": "Stargazer Trading Post",
+      "shadowpath trading post": "Shadowpath Temple Trading Post"
+    };
+
+    function resolveOutpostFromRegion(regionName) {
+      if (!regionName) return "—";
+      const key = regionName.toLowerCase().trim();
+      return REGION_TO_OUTPOST[key] || regionName;
+    }
+
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let field = "";
+      let inQuotes = false;
+      const CR = String.fromCharCode(13);
+      const LF = String.fromCharCode(10);
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            field += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            field += ch;
+          }
+        } else {
+          if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === ",") {
+            row.push(field.trim());
+            field = "";
+          } else if (ch === CR && next === LF) {
+            row.push(field.trim());
+            rows.push(row);
+            row = [];
+            field = "";
+            i++;
+          } else if (ch === LF || ch === CR) {
+            row.push(field.trim());
+            rows.push(row);
+            row = [];
+            field = "";
+          } else {
+            field += ch;
+          }
+        }
+      }
+      if (field.length > 0 || row.length > 0) {
+        row.push(field.trim());
+        rows.push(row);
+      }
+      return rows;
+    }
+
+    function parseGoldNumber(raw) {
+      if (!raw) return null;
+      const cleaned = String(raw).replace(/,/g, "").trim();
+      const match = cleaned.match(/^(\d+(?:\.\d+)?)\s*G?$/i);
+      if (!match) return null;
+      const val = parseFloat(match[1]);
+      return Number.isFinite(val) ? Math.round(val) : null;
+    }
+
+    function parseReward(raw) {
+      const goldMatch = raw.match(/^(\d[\d,]*)\s*~\s*(\d[\d,]*)\s*G$/i);
+      if (goldMatch) {
+        const min = parseInt(goldMatch[1].replace(/,/g, ""), 10);
+        const max = parseInt(goldMatch[2].replace(/,/g, ""), 10);
+        return {
+          type: "gold",
+          raw,
+          min,
+          max,
+          avg: Math.round((min + max) / 2)
+        };
+      }
+      return {
+        type: "item",
+        raw,
+        min: null,
+        max: null,
+        avg: null
+      };
+    }
+
+    function parseTradingPostSheet(rows) {
+      const outposts = [];
+      let current = null;
+
+      for (const r of rows) {
+        const c0 = (r[0] || "").trim();
+        const c1 = (r[1] || "").trim();
+        const c2 = (r[2] || "").trim();
+        const c3 = (r[3] || "").trim(); // Quantity (100%) for item rewards
+        const c4 = (r[4] || "").trim(); // Dispatch Trade Goods
+
+        if (!c0 && !c1 && !c2 && !c4) continue;
+        if (c0 === "Trading Post Info") continue;
+
+        if (c0 && !c1 && !c2) {
+          current = {
+            name: c0,
+            sales: [],
+            dispatch: []
+          };
+          outposts.push(current);
+          continue;
+        }
+
+        if (c0 === "Trade Goods for Sale") continue;
+
+        if (current) {
+          if (c0 && c2) {
+            const reward = parseReward(c2);
+            // Col D = Quantity (100%) — mainly for item/material rewards
+            if (c3) {
+              const q = parseInt(c3.replace(/,/g, ""), 10);
+              if (Number.isFinite(q) && q > 0) {
+                reward.qty = q;
+              }
+            }
+            current.sales.push({
+              good: c0,
+              key: normalizeGoodKey(c0),
+              region: c1,
+              reward
+            });
+          }
+          if (c4) {
+            current.dispatch.push({
+              good: c4,
+              key: normalizeGoodKey(c4)
+            });
+          }
+        }
+      }
+
+      return outposts;
+    }
+
+    function formatRewardLabel(reward) {
+      if (!reward) return "—";
+      if (reward.type === "gold") return reward.raw;
+      const qty = reward.qty;
+      if (qty != null && qty > 0) {
+        return "×" + qty + " " + reward.raw;
+      }
+      return reward.raw;
+    }
+
+    // Parses Lookup rows where:
+    // Col A (0): Pack / Trade Good name
+    // Col B (1): Trademark Region (optional)
+    // Col C (2): Buy Price in Gold (e.g. "1200G" or "1,200")
+    // Cols D, E, F (3, 4, 5): Materials (optional; if empty, no materials are consumed)
+    function parseLookupTable(rows) {
+      const lookupMap = new Map();
+
+      for (const r of rows) {
+        const name = (r[0] || "").trim();
+        if (!name || name.toLowerCase() === "trade goods for sale" || name.toLowerCase() === "pack" || name.toLowerCase() === "item name") {
+          continue;
+        }
+
+        const region = (r[1] || "").trim();
+        // Lookup schema:
+        // C Cost | D Packing Cost | E Material 1 | F Quantity | G Arcane Sealed Chest (0/1) | H Blank Trade Certificate (0/1)
+        const costGold = parseGoldNumber(r[2] || "");
+        const packingCostGold = parseGoldNumber(r[3] || "");
+
+        const hasCostCol = (r[2] || "").trim() !== "";
+        const hasPackingCol = (r[3] || "").trim() !== "";
+        if (!hasCostCol && !hasPackingCol) continue;
+        // Skip main-sheet contamination (reward ranges in col C)
+        if (costGold === null && packingCostGold === null && hasCostCol) continue;
+
+        const matName = (r[4] || "").trim();
+        const matQtyRaw = (r[5] || "").trim();
+        const matQty = matQtyRaw ? (parseInt(matQtyRaw, 10) || null) : null;
+        const needsArcane = String(r[6] || "").trim() === "1";
+        const needsBlankCert = String(r[7] || "").trim() === "1";
+
+        let buyPriceGold = null;
+        let costSource = null;
+        if (costGold !== null && costGold > 0) {
+          buyPriceGold = costGold;
+          costSource = "cost";
+        } else if (packingCostGold !== null && packingCostGold > 0) {
+          buyPriceGold = packingCostGold;
+          costSource = "packing";
+        } else if (costGold === 0 && packingCostGold === 0) {
+          buyPriceGold = 0;
+          costSource = "cost";
+        }
+
+        const materials = [];
+        if (matName) {
+          materials.push({ name: matName, qty: matQty });
+        }
+        if (needsArcane) {
+          materials.push({ name: "Arcane Sealed Chest", qty: 1 });
+        }
+        if (needsBlankCert) {
+          materials.push({ name: "Blank Trade Certificate", qty: 1 });
+        }
+
+        const entry = {
+          name,
+          key: normalizeGoodKey(name),
+          region,
+          costGold,
+          packingCostGold,
+          buyPriceGold,
+          costSource,
+          materials
+        };
+
+        lookupMap.set(name.toLowerCase(), entry);
+        if (!lookupMap.has(entry.key)) {
+          lookupMap.set(entry.key, entry);
+        }
+      }
+
+      return lookupMap;
+    }
+
+    function getLookupEntry(goodObj, lookupMap) {
+      if (!goodObj || !lookupMap) return null;
+      return lookupMap.get(goodObj.name.toLowerCase()) || lookupMap.get(goodObj.key) || null;
+    }
+
+    let state = {
+      outposts: [],
+      dispatchByGoodKey: {},
+      allGoods: [],
+      lookupMap: new Map(),
+      selectedOrigin: "ALL",
+      selectedDest: "",
+      selectedGood: "",
+      activeTab: "sale",
+      rewardFilter: "all",
+      searchQuery: "",
+      runSlots: [] // up to 7 pack names for trade run simulation
+    };
+
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const footerSource = document.getElementById("footerSource");
+    const originSelect = document.getElementById("originSelect");
+    const goodSelect = document.getElementById("goodSelect");
+    const destSelect = document.getElementById("destSelect");
+    const leftList = document.getElementById("leftList");
+    const searchInput = document.getElementById("searchInput");
+    const saleControls = document.getElementById("saleControls");
+
+    function applyData(outposts, lookupMap, modeLabel, dotClass) {
+      const dispatchByGoodKey = {};
+      const goodsMap = new Map();
+
+      for (const op of outposts) {
+        for (const d of op.dispatch) {
+          dispatchByGoodKey[d.key] = op.name;
+        }
+        for (const s of op.sales) {
+          if (!goodsMap.has(s.good)) {
+            const lkp = lookupMap.get(s.good.toLowerCase()) || lookupMap.get(s.key);
+            goodsMap.set(s.good, {
+              name: s.good,
+              key: s.key,
+              region: s.region || (lkp ? lkp.region : ""),
+              originOutpost: dispatchByGoodKey[s.key] || resolveOutpostFromRegion(s.region || (lkp ? lkp.region : ""))
+            });
+          }
+        }
+      }
+
+      for (const item of goodsMap.values()) {
+        if (dispatchByGoodKey[item.key]) {
+          item.originOutpost = dispatchByGoodKey[item.key];
+        }
+      }
+
+      state.outposts = outposts;
+      state.dispatchByGoodKey = dispatchByGoodKey;
+      state.allGoods = Array.from(goodsMap.values());
+      state.lookupMap = lookupMap;
+
+      if (!state.selectedDest || !outposts.some(o => o.name === state.selectedDest)) {
+        state.selectedDest = outposts[0].name;
+      }
+
+      populateDropdowns();
+      renderAll();
+
+      const pricedCount = Array.from(new Set(
+        Array.from(lookupMap.values()).filter(v => v.buyPriceGold !== null).map(v => v.key)
+      )).length;
+
+      const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+      statusDot.className = "status-dot " + dotClass;
+      statusText.textContent = modeLabel + " (" + outposts.length + " Outposts · " + state.allGoods.length + " Packs · " + pricedCount + " Buy Prices) · " + now;
+      footerSource.textContent = modeLabel;
+    }
+
+    async function fetchWithTimeout(url, ms = 6000) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.text();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    async function loadSheetData() {
+      statusDot.className = "status-dot";
+      statusText.textContent = "Syncing Google Sheet...";
+
+      let outposts = [];
+      let lookupMap = parseLookupTable(EMBEDDED_LOOKUP_ROWS);
+      let isLiveMain = false;
+
+      try {
+        const csvText = await fetchWithTimeout(SHEET_CSV_URL + "&_t=" + Date.now());
+        const rows = parseCSV(csvText);
+        outposts = parseTradingPostSheet(rows);
+
+        // Merge only valid Lookup rows (gold cost in Col C).
+        const parsedLookup = parseLookupTable(rows);
+        for (const [k, v] of parsedLookup) {
+          lookupMap.set(k, v);
+        }
+
+        if (outposts.length > 0) {
+          isLiveMain = true;
+        }
+      } catch (err) {
+        console.warn("Direct CSV fetch failed:", err);
+      }
+
+      if (!isLiveMain) {
+        try {
+          const proxyText = await fetchWithTimeout("sheet.php?_t=" + Date.now());
+          const rows = parseCSV(proxyText);
+          outposts = parseTradingPostSheet(rows);
+          const parsedLookup = parseLookupTable(rows);
+          for (const [k, v] of parsedLookup) {
+            lookupMap.set(k, v);
+          }
+          if (outposts.length > 0) {
+            isLiveMain = true;
+          }
+        } catch (_) {}
+      }
+
+      if (LOOKUP_CSV_URL) {
+        try {
+          const lkpText = await fetchWithTimeout(LOOKUP_CSV_URL + "&_t=" + Date.now());
+          const lkpRows = parseCSV(lkpText);
+          const dedicatedLookup = parseLookupTable(lkpRows);
+          if (dedicatedLookup.size > 0) {
+            lookupMap = dedicatedLookup;
+          }
+        } catch (_) {}
+      }
+
+      if (isLiveMain && outposts.length > 0) {
+        applyData(outposts, lookupMap, "Live Google Sheet CSV", "live");
+        return;
+      }
+
+      const fallbackOutposts = parseTradingPostSheet(EMBEDDED_MAIN_ROWS);
+      if (fallbackOutposts.length > 0) {
+        applyData(fallbackOutposts, lookupMap, "Embedded Snapshot (Offline / CORS fallback)", "fallback");
+      } else {
+        statusDot.className = "status-dot error";
+        statusText.textContent = "Unable to load Trading Post data";
+        leftList.innerHTML = '<div class="empty-msg">Failed to load data. Check network or Google Sheet publish settings.</div>';
+      }
+    }
+
+    function populateDropdowns() {
+      const prevOrigin = state.selectedOrigin;
+      originSelect.innerHTML = '<option value="ALL">All Outposts (' + state.allGoods.length + ' Packs)</option>';
+      for (const op of state.outposts) {
+        const opt = document.createElement("option");
+        opt.value = op.name;
+        opt.textContent = op.name + " (" + op.dispatch.length + " Dispatch)";
+        originSelect.appendChild(opt);
+      }
+      originSelect.value = prevOrigin;
+
+      const prevDest = state.selectedDest;
+      destSelect.innerHTML = "";
+      for (const op of state.outposts) {
+        const opt = document.createElement("option");
+        opt.value = op.name;
+        opt.textContent = op.name;
+        destSelect.appendChild(opt);
+      }
+      destSelect.value = prevDest;
+
+      updateGoodDropdown();
+    }
+
+    function updateGoodDropdown() {
+      let filtered = state.allGoods;
+      if (state.selectedOrigin !== "ALL") {
+        filtered = filtered.filter(g => g.originOutpost === state.selectedOrigin);
+      }
+
+      const prevGood = state.selectedGood;
+      goodSelect.innerHTML = "";
+
+      for (const g of filtered) {
+        const lkp = getLookupEntry(g, state.lookupMap);
+        let priceTag = "";
+        if (lkp && lkp.buyPriceGold !== null) {
+          const tag = lkp.costSource === "packing" ? "Pack" : "Cost";
+          priceTag = " · " + tag + ": " + lkp.buyPriceGold.toLocaleString() + "G";
+        }
+        const opt = document.createElement("option");
+        opt.value = g.name;
+        opt.textContent = g.name + " (" + g.region + ")" + priceTag;
+        goodSelect.appendChild(opt);
+      }
+
+      if (filtered.some(g => g.name === prevGood)) {
+        state.selectedGood = prevGood;
+      } else if (filtered.length > 0) {
+        state.selectedGood = filtered[0].name;
+      } else {
+        state.selectedGood = "";
+      }
+      goodSelect.value = state.selectedGood;
+
+      document.getElementById("goodCount").textContent = filtered.length + " available";
+    }
+
+    function renderLeftPanel() {
+      const destOp = state.outposts.find(o => o.name === state.selectedDest);
+      if (!destOp) return;
+
+      leftList.innerHTML = "";
+      saleControls.style.display = "block";
+      const q = state.searchQuery.toLowerCase();
+
+      const items = destOp.sales.filter(item => {
+        if (state.rewardFilter !== "all" && item.reward.type !== state.rewardFilter) return false;
+        if (q && !item.good.toLowerCase().includes(q) && !item.region.toLowerCase().includes(q)) return false;
+        if (state.selectedOrigin !== "ALL") {
+          const gObj = state.allGoods.find(g => g.key === item.key || g.name === item.good);
+          const itemOrigin = (gObj && gObj.originOutpost) || resolveOutpostFromRegion(item.region);
+          if (itemOrigin !== state.selectedOrigin) return false;
+        }
+        return true;
+      });
+
+      if (!items.length) {
+        const originHint = state.selectedOrigin !== "ALL"
+          ? " from " + escapeHtml(state.selectedOrigin)
+          : "";
+        leftList.innerHTML = '<div class="empty-msg">No matching trade goods at ' + escapeHtml(destOp.name) + originHint + '.</div>';
+        return;
+      }
+
+      for (const item of items) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "good-row" + (item.good === state.selectedGood ? " selected" : "");
+        const imgSrc = getPackImageSrc(item.good);
+        btn.innerHTML =
+          '<img class="good-row-bg" src="' + imgSrc + '" data-pack="' + escapeHtml(item.good) + '" alt="" loading="lazy" onerror="handlePackImgError(this, this.dataset.pack)" />' +
+          '<div class="good-row-left">' +
+            '<span class="good-origin">' + escapeHtml(item.region) + '</span>' +
+            '<span class="good-name">' + escapeHtml(item.good) + '</span>' +
+          '</div>' +
+          '<span class="good-reward-tag ' + (item.reward.type === "gold" ? "gold" : "") + '">' +
+            escapeHtml(formatRewardLabel(item.reward)) +
+          '</span>';
+        btn.addEventListener("click", () => {
+          state.selectedGood = item.good;
+          updateGoodDropdown();
+          renderAll();
+        });
+        leftList.appendChild(btn);
+      }
+    }
+
+    function formatSignedGold(val) {
+      if (val > 0) return "+" + val.toLocaleString() + " G";
+      if (val < 0) return val.toLocaleString() + " G";
+      return "0 G";
+    }
+
+    function renderDetailsAndComparison() {
+      const goodObj = state.allGoods.find(g => g.name === state.selectedGood);
+      const destOp = state.outposts.find(o => o.name === state.selectedDest);
+
+      const detailGoodName = document.getElementById("detailGoodName");
+      const detailRouteBadge = document.getElementById("detailRouteBadge");
+      const metaItemName = document.getElementById("metaItemName");
+      const metaRegion = document.getElementById("metaRegion");
+      const metaDispatchOutpost = document.getElementById("metaDispatchOutpost");
+      const metaDestOutpost = document.getElementById("metaDestOutpost");
+      const costSection = document.getElementById("costSection");
+      const buyPriceText = document.getElementById("buyPriceText");
+      const matsRow = document.getElementById("matsRow");
+      const matsList = document.getElementById("matsList");
+      const rewardBox = document.getElementById("rewardBox");
+      const rewardValue = document.getElementById("rewardValue");
+      const rewardSub = document.getElementById("rewardSub");
+      const profitBox = document.getElementById("profitBox");
+      const profitValue = document.getElementById("profitValue");
+      const profitSub = document.getElementById("profitSub");
+      const comparisonBody = document.getElementById("comparisonBody");
+
+      if (!goodObj || !destOp) {
+        detailGoodName.textContent = "No Trade Good Selected";
+        costSection.style.display = "none";
+        profitBox.style.display = "none";
+        comparisonBody.innerHTML = "";
+        return;
+      }
+
+      const saleEntry = destOp.sales.find(s => s.key === goodObj.key);
+      const lkp = getLookupEntry(goodObj, state.lookupMap);
+      const buyPrice = (lkp && lkp.buyPriceGold !== null) ? lkp.buyPriceGold : null;
+      const materials = (lkp && Array.isArray(lkp.materials)) ? lkp.materials : [];
+
+      detailGoodName.textContent = goodObj.name;
+      detailRouteBadge.textContent = goodObj.originOutpost + " → " + destOp.name;
+      metaItemName.textContent = goodObj.name;
+      metaRegion.textContent = goodObj.region;
+      metaDispatchOutpost.textContent = goodObj.originOutpost;
+      metaDestOutpost.textContent = destOp.name;
+
+      // Display effective cost (Cost if >0, else Packing Cost) + materials with qty
+      if (buyPrice !== null || materials.length > 0) {
+        costSection.style.display = "flex";
+        if (buyPrice !== null) {
+          const srcLabel = (lkp && lkp.costSource === "packing") ? "Packing Cost" : "Buy Cost";
+          buyPriceText.textContent = buyPrice.toLocaleString() + " G";
+          const costLabelEl = costSection.querySelector(".reward-label");
+          if (costLabelEl) costLabelEl.textContent = srcLabel + " (Lookup)";
+        } else {
+          buyPriceText.textContent = "—";
+        }
+        if (materials.length > 0) {
+          matsRow.style.display = "flex";
+          matsList.innerHTML = materials.map(m => {
+            if (typeof m === "string") {
+              return '<span class="mat-chip">' + escapeHtml(m) + '</span>';
+            }
+            const qtyStr = (m.qty != null && m.qty > 0) ? (" ×" + m.qty) : "";
+            return '<span class="mat-chip">' + escapeHtml(m.name) + qtyStr + '</span>';
+          }).join("");
+        } else {
+          matsRow.style.display = "none";
+          matsList.innerHTML = "";
+        }
+      } else {
+        costSection.style.display = "none";
+        matsRow.style.display = "none";
+        matsList.innerHTML = "";
+      }
+
+      rewardBox.className = "reward-box";
+      profitBox.style.display = "none";
+
+      if (!saleEntry) {
+        rewardValue.innerHTML = '<span style="color:var(--text-secondary); font-size:1.05rem;">Not sold at ' + escapeHtml(destOp.name) + ' (Home / Origin Post)</span>';
+        rewardSub.textContent = "Select another Arrival Trading Post";
+      } else if (saleEntry.reward.type === "gold") {
+        rewardBox.classList.add("is-gold");
+        rewardValue.innerHTML =
+          '<span class="coin-badge">G</span>' +
+          '<span class="reward-gold-text">' + saleEntry.reward.min.toLocaleString() + ' ~ ' + saleEntry.reward.max.toLocaleString() + '</span>';
+        rewardSub.innerHTML = 'Mean payout: <strong class="mono text-gold">' + saleEntry.reward.avg.toLocaleString() + ' G</strong>';
+
+        if (buyPrice !== null) {
+          const netMin = saleEntry.reward.min - buyPrice;
+          const netMax = saleEntry.reward.max - buyPrice;
+          const netAvg = saleEntry.reward.avg - buyPrice;
+          const roiPct = buyPrice > 0 ? ((netAvg / buyPrice) * 100).toFixed(1) : null;
+          const cls = netAvg >= 0 ? "profit-pos" : "profit-neg";
+
+          profitBox.style.display = "flex";
+          profitBox.className = "reward-box " + (netAvg >= 0 ? "is-gold" : "is-item");
+          profitValue.innerHTML = '<span class="mono ' + cls + '">' + formatSignedGold(netMin) + ' ~ ' + formatSignedGold(netMax) + '</span>';
+          profitSub.innerHTML =
+            'Avg Net: <strong class="mono ' + cls + '">' + formatSignedGold(netAvg) + '</strong>' +
+            (roiPct !== null ? ' · ROI: <strong class="mono ' + cls + '">' + (netAvg >= 0 ? "+" : "") + roiPct + '%</strong>' : '');
+        }
+      } else {
+        rewardBox.classList.add("is-item");
+        const qtyLabel = (saleEntry.reward.qty != null && saleEntry.reward.qty > 0)
+          ? ('×' + saleEntry.reward.qty + ' ')
+          : '';
+        rewardValue.innerHTML = '<span class="reward-item-text">' + escapeHtml(qtyLabel + saleEntry.reward.raw) + '</span>';
+        rewardSub.textContent = saleEntry.reward.qty
+          ? ("Material / Item Reward @ 100% market (" + saleEntry.reward.qty + " per pack)")
+          : "Material / Item Reward";
+      }
+
+      comparisonBody.innerHTML = "";
+      for (const op of state.outposts) {
+        const match = op.sales.find(s => s.key === goodObj.key);
+        const tr = document.createElement("tr");
+        if (op.name === destOp.name) {
+          tr.className = "current-dest";
+        }
+
+        if (!match) {
+          tr.innerHTML =
+            '<td>' + escapeHtml(op.name) + '</td>' +
+            '<td style="color:var(--text-muted);">Origin Outpost</td>' +
+            '<td style="color:var(--text-muted);">—</td>' +
+            '<td style="color:var(--text-muted);">—</td>' +
+            '<td style="color:var(--text-muted);">—</td>';
+        } else if (match.reward.type === "gold") {
+          let netCell = '<td style="color:var(--text-muted);">—</td>';
+          if (buyPrice !== null) {
+            const netAvg = match.reward.avg - buyPrice;
+            const cls = netAvg >= 0 ? "profit-pos" : "profit-neg";
+            netCell = '<td class="mono ' + cls + '"><strong>' + formatSignedGold(netAvg) + '</strong></td>';
+          }
+          tr.innerHTML =
+            '<td>' + escapeHtml(op.name) + '</td>' +
+            '<td class="text-gold">Gold</td>' +
+            '<td class="mono text-gold">' + match.reward.min.toLocaleString() + ' ~ ' + match.reward.max.toLocaleString() + ' G</td>' +
+            '<td class="mono">' + match.reward.avg.toLocaleString() + ' G</td>' +
+            netCell;
+        } else {
+          tr.innerHTML =
+            '<td>' + escapeHtml(op.name) + '</td>' +
+            '<td class="text-item">Material / Item</td>' +
+            '<td class="text-item">' + escapeHtml(formatRewardLabel(match.reward)) + '</td>' +
+            '<td style="color:var(--text-muted);">—</td>' +
+            '<td style="color:var(--text-muted);">—</td>';
+        }
+
+        tr.addEventListener("click", () => {
+          state.selectedDest = op.name;
+          destSelect.value = op.name;
+          renderAll();
+        });
+
+        comparisonBody.appendChild(tr);
+      }
+    }
+
+    const RUN_CAPACITY = 7;
+
+    function getSaleRewardForGood(goodName, destName) {
+      const goodObj = state.allGoods.find(g => g.name === goodName);
+      const destOp = state.outposts.find(o => o.name === destName);
+      if (!goodObj || !destOp) return null;
+      return destOp.sales.find(s => s.key === goodObj.key) || null;
+    }
+
+    function renderRunSimulation() {
+      const slotsEl = document.getElementById("runSlots");
+      const capLabel = document.getElementById("runCapacityLabel");
+      if (!slotsEl || !capLabel) return;
+
+      const n = state.runSlots.length;
+      capLabel.textContent = n + " / " + RUN_CAPACITY + " packs";
+
+      slotsEl.innerHTML = "";
+      for (let i = 0; i < RUN_CAPACITY; i++) {
+        const name = state.runSlots[i] || null;
+        const div = document.createElement("div");
+        div.className = "run-slot" + (name ? " filled" : "");
+
+        if (name) {
+          const goodObj = state.allGoods.find(g => g.name === name);
+          const lkp = goodObj ? getLookupEntry(goodObj, state.lookupMap) : null;
+          const price = (lkp && lkp.buyPriceGold !== null) ? lkp.buyPriceGold.toLocaleString() + "G" : "—";
+          const imgSrc = getPackImageSrc(name);
+          div.innerHTML =
+            '<button type="button" class="run-slot-remove" data-idx="' + i + '" title="Remove">×</button>' +
+            '<img class="run-slot-img" src="' + imgSrc + '" data-pack="' + escapeHtml(name) + '" alt="" onerror="handlePackImgError(this, this.dataset.pack)" />' +
+            '<span class="run-slot-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</span>' +
+            '<span class="run-slot-price">' + escapeHtml(price) + '</span>';
+        } else {
+          div.innerHTML =
+            '<span class="run-slot-idx">#' + (i + 1) + '</span>' +
+            '<span class="run-slot-name" style="color:var(--text-muted);">Empty</span>';
+        }
+        slotsEl.appendChild(div);
+      }
+
+      slotsEl.querySelectorAll(".run-slot-remove").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.dataset.idx, 10);
+          state.runSlots.splice(idx, 1);
+          renderRunSimulation();
+        });
+      });
+
+      // Totals
+      let totalCost = 0;
+      let costKnown = true;
+      let grossMin = 0, grossMax = 0, grossAvg = 0;
+      let hasGold = false;
+      const itemCounts = {};
+
+      for (const name of state.runSlots) {
+        const goodObj = state.allGoods.find(g => g.name === name);
+        const lkp = goodObj ? getLookupEntry(goodObj, state.lookupMap) : null;
+        if (lkp && lkp.buyPriceGold !== null) {
+          totalCost += lkp.buyPriceGold;
+        } else {
+          costKnown = false;
+        }
+
+        const sale = getSaleRewardForGood(name, state.selectedDest);
+        if (sale && sale.reward.type === "gold") {
+          hasGold = true;
+          grossMin += sale.reward.min;
+          grossMax += sale.reward.max;
+          grossAvg += sale.reward.avg;
+        } else if (sale && sale.reward.type === "item") {
+          const key = sale.reward.raw;
+          const q = (sale.reward.qty != null && sale.reward.qty > 0) ? sale.reward.qty : 1;
+          itemCounts[key] = (itemCounts[key] || 0) + q;
+        }
+      }
+
+      const costEl = document.getElementById("runTotalCost");
+      const rangeEl = document.getElementById("runGrossRange");
+      const avgEl = document.getElementById("runGrossAvg");
+      const netEl = document.getElementById("runNetAvg");
+      const roiEl = document.getElementById("runRoi");
+      const itemsEl = document.getElementById("runItems");
+
+      if (n === 0) {
+        costEl.textContent = "—";
+        rangeEl.textContent = "—";
+        avgEl.textContent = "—";
+        netEl.textContent = "—";
+        netEl.className = "run-stat-value";
+        roiEl.textContent = "—";
+        roiEl.className = "run-stat-value";
+        itemsEl.textContent = "—";
+        return;
+      }
+
+      costEl.textContent = costKnown
+        ? totalCost.toLocaleString() + " G"
+        : (totalCost > 0 ? totalCost.toLocaleString() + " G+" : "unknown");
+
+      if (hasGold) {
+        rangeEl.textContent = grossMin.toLocaleString() + " ~ " + grossMax.toLocaleString() + " G";
+        avgEl.textContent = grossAvg.toLocaleString() + " G";
+        if (costKnown) {
+          const net = grossAvg - totalCost;
+          const cls = net >= 0 ? "profit-pos" : "profit-neg";
+          netEl.className = "run-stat-value " + cls;
+          netEl.textContent = formatSignedGold(net);
+          if (totalCost > 0) {
+            const roi = ((net / totalCost) * 100).toFixed(1);
+            roiEl.className = "run-stat-value " + cls;
+            roiEl.textContent = (net >= 0 ? "+" : "") + roi + "%";
+          } else {
+            roiEl.textContent = "—";
+            roiEl.className = "run-stat-value";
+          }
+        } else {
+          netEl.textContent = "need buy prices";
+          netEl.className = "run-stat-value";
+          roiEl.textContent = "—";
+          roiEl.className = "run-stat-value";
+        }
+      } else {
+        rangeEl.textContent = "—";
+        avgEl.textContent = "—";
+        netEl.textContent = "—";
+        netEl.className = "run-stat-value";
+        roiEl.textContent = "—";
+        roiEl.className = "run-stat-value";
+      }
+
+      const itemParts = Object.keys(itemCounts).map(k => itemCounts[k] + "× " + k);
+      itemsEl.textContent = itemParts.length ? itemParts.join(", ") : (hasGold ? "none" : "—");
+    }
+
+    function addPackToRun(packName, count) {
+      if (!packName) return;
+      const room = RUN_CAPACITY - state.runSlots.length;
+      if (room <= 0) return;
+      const n = Math.min(count || 1, room);
+      for (let i = 0; i < n; i++) state.runSlots.push(packName);
+      renderRunSimulation();
+    }
+
+    function renderAll() {
+      renderLeftPanel();
+      renderDetailsAndComparison();
+      renderRunSimulation();
+    }
+
+    function getPackImageSrc(packName) {
+      if (!packName) return "";
+      const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
+      const noSpaces = canonical.replace(/\s+/g, "");
+      return "imgs/" + encodeURIComponent(noSpaces) + ".webp";
+    }
+
+    function getPackImageFallbackSrc(packName) {
+      if (!packName) return "";
+      const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
+      const alphanumericOnly = canonical.replace(/[^a-zA-Z0-9]/g, "");
+      return "imgs/" + encodeURIComponent(alphanumericOnly) + ".webp";
+    }
+
+    function handlePackImgError(imgEl, packName) {
+      if (!imgEl || !packName) return;
+      if (!imgEl.dataset.fallbackTried) {
+        imgEl.dataset.fallbackTried = "1";
+        const fb = getPackImageFallbackSrc(packName);
+        if (fb && imgEl.getAttribute("src") !== fb) {
+          imgEl.setAttribute("src", fb);
+          return;
+        }
+      }
+      imgEl.style.display = "none";
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    originSelect.addEventListener("change", () => {
+      state.selectedOrigin = originSelect.value;
+      updateGoodDropdown();
+      renderAll();
+    });
+
+    goodSelect.addEventListener("change", () => {
+      state.selectedGood = goodSelect.value;
+      renderAll();
+    });
+
+    destSelect.addEventListener("change", () => {
+      state.selectedDest = destSelect.value;
+      renderAll();
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadSheetData);
+
+    document.getElementById("swapBtn").addEventListener("click", () => {
+      if (state.selectedOrigin === "ALL") {
+        const goodObj = state.allGoods.find(g => g.name === state.selectedGood);
+        if (goodObj && state.outposts.some(o => o.name === goodObj.originOutpost)) {
+          const prevDest = state.selectedDest;
+          state.selectedDest = goodObj.originOutpost;
+          destSelect.value = state.selectedDest;
+          state.selectedOrigin = prevDest;
+          originSelect.value = prevDest;
+          updateGoodDropdown();
+          renderAll();
+        }
+        return;
+      }
+      const temp = state.selectedOrigin;
+      state.selectedOrigin = state.selectedDest;
+      state.selectedDest = temp;
+      originSelect.value = state.selectedOrigin;
+      destSelect.value = state.selectedDest;
+      updateGoodDropdown();
+      renderAll();
+    });
+
+    document.querySelectorAll(".pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        document.querySelectorAll(".pill").forEach(p => p.classList.remove("active"));
+        pill.classList.add("active");
+        state.rewardFilter = pill.dataset.filter;
+        renderLeftPanel();
+      });
+    });
+
+    searchInput.addEventListener("input", () => {
+      state.searchQuery = searchInput.value;
+      renderLeftPanel();
+    });
+
+    document.addEventListener("keydown", e => {
+      if (document.activeElement === searchInput) {
+        if (e.key === "Escape") searchInput.blur();
+        return;
+      }
+      if (e.key === "r" || e.key === "R") {
+        loadSheetData();
+      } else if (e.key === "x" || e.key === "X") {
+        document.getElementById("swapBtn").click();
+      } else if (e.key === "/") {
+        e.preventDefault();
+        searchInput.focus();
+      }
+    });
+
+
+    document.getElementById("runAddOneBtn").addEventListener("click", () => {
+      if (!state.selectedGood) return;
+      if (state.runSlots.length >= RUN_CAPACITY) return;
+      addPackToRun(state.selectedGood, 1);
+    });
+
+    document.getElementById("runFillBtn").addEventListener("click", () => {
+      if (!state.selectedGood) return;
+      const room = RUN_CAPACITY - state.runSlots.length;
+      if (room <= 0) {
+        // replace all with selected
+        state.runSlots = Array(RUN_CAPACITY).fill(state.selectedGood);
+        renderRunSimulation();
+        return;
+      }
+      addPackToRun(state.selectedGood, room);
+    });
+
+    document.getElementById("runClearBtn").addEventListener("click", () => {
+      state.runSlots = [];
+      renderRunSimulation();
+    });
+
+    loadSheetData();
+  </script>
+</body>
+</html>
