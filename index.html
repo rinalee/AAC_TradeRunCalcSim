@@ -856,7 +856,7 @@
       }
     }
   </style>
-<script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjBhYTJlOTdhY2JlMTI3ODk2MDAwNjYwYjNhYzAxYjkzNjA0YTQ0Y2I1MzEzNGIxODgSCxIHEKaX9q3tHhgB%26filename%3Dtrade_run_2-v5.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
+</head>
 <body>
 
   <header class="top-bar">
@@ -1251,12 +1251,21 @@
       return outposts;
     }
 
+    function getItemQtyRange(reward) {
+      if (!reward || reward.type !== "item") return null;
+      const baseQty = (reward.qty != null && reward.qty > 0) ? reward.qty : null;
+      if (baseQty === null) return null;
+      const maxQty = Math.round(baseQty * 1.4);
+      return { min: baseQty, max: maxQty };
+    }
+
     function formatRewardLabel(reward) {
       if (!reward) return "—";
       if (reward.type === "gold") return reward.raw;
-      const qty = reward.qty;
-      if (qty != null && qty > 0) {
-        return "×" + qty + " " + reward.raw;
+      const range = getItemQtyRange(reward);
+      if (range) {
+        const qtyLabel = range.max > range.min ? (range.min + "~" + range.max) : String(range.min);
+        return "×" + qtyLabel + " " + reward.raw;
       }
       return reward.raw;
     }
@@ -1709,13 +1718,14 @@
         }
       } else {
         rewardBox.classList.add("is-item");
-        const qtyLabel = (saleEntry.reward.qty != null && saleEntry.reward.qty > 0)
-          ? ('×' + saleEntry.reward.qty + ' ')
+        const range = getItemQtyRange(saleEntry.reward);
+        const qtyLabel = range
+          ? ('×' + (range.max > range.min ? (range.min + ' ~ ' + range.max) : range.min) + ' ')
           : '';
         rewardValue.innerHTML = '<span class="reward-item-text">' + escapeHtml(qtyLabel + saleEntry.reward.raw) + '</span>';
-        rewardSub.textContent = saleEntry.reward.qty
-          ? ("Material / Item Reward @ 100% market (" + saleEntry.reward.qty + " per pack)")
-          : "Material / Item Reward";
+        rewardSub.textContent = range
+          ? ("Material / Item Reward (100% base: " + range.min + " · 140% max: " + range.max + " per pack)")
+          : "Material / Item Reward (100% ~ 140% range)";
       }
 
       comparisonBody.innerHTML = "";
@@ -1839,8 +1849,14 @@
           grossAvg += sale.reward.avg;
         } else if (sale && sale.reward.type === "item") {
           const key = sale.reward.raw;
-          const q = (sale.reward.qty != null && sale.reward.qty > 0) ? sale.reward.qty : 1;
-          itemCounts[key] = (itemCounts[key] || 0) + q;
+          const range = getItemQtyRange(sale.reward);
+          const baseAdd = range ? range.min : 1;
+          const maxAdd = range ? range.max : 1;
+          if (!itemCounts[key]) {
+            itemCounts[key] = { min: 0, max: 0, hasQty: Boolean(range) };
+          }
+          itemCounts[key].min += baseAdd;
+          itemCounts[key].max += maxAdd;
         }
       }
 
@@ -1898,7 +1914,12 @@
         roiEl.className = "run-stat-value";
       }
 
-      const itemParts = Object.keys(itemCounts).map(k => itemCounts[k] + "× " + k);
+      const itemParts = Object.keys(itemCounts).map(k => {
+        const c = itemCounts[k];
+        if (!c.hasQty) return k;
+        const label = c.max > c.min ? (c.min + "~" + c.max) : String(c.min);
+        return "×" + label + " " + k;
+      });
       itemsEl.textContent = itemParts.length ? itemParts.join(", ") : (hasGold ? "none" : "—");
     }
 
