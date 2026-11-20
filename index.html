@@ -856,7 +856,7 @@
       }
     }
   </style>
-<script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjBjM2QxMTY0ZGY3YjM5NGZiMDAwNjYwYjNlOWYwY2Q1OTAxNTc1MDlmM2QxMGFlYjgSCxIHEKaX9q3tHhgB%26filename%3Dtrade_run_2-v6.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
+<script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjBhYTJlOTdhY2JlMTI3ODk2MDAwNjYwYjNhYzAxYjkzNjA0YTQ0Y2I1MzEzNGIxODgSCxIHEKaX9q3tHhgB%26filename%3Dtrade_run_2-v5.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="c630a1973a914aec9b66eb931d0" src="//local.adguard.org?ts=1795173490946&amp;name=AdGuard%20Extra&amp;type=user-script"></script></head>
 <body>
 
   <header class="top-bar">
@@ -1585,7 +1585,7 @@
         btn.className = "good-row" + (item.good === state.selectedGood ? " selected" : "");
         const imgSrc = getPackImageSrc(item.good);
         btn.innerHTML =
-          '<img class="good-row-bg" src="' + imgSrc + '" data-pack="' + escapeHtml(item.good) + '" alt="" loading="lazy" onerror="this.style.display='none'" />' +
+          '<img class="good-row-bg" src="' + imgSrc + '" data-pack="' + escapeHtml(item.good) + '" alt="" loading="lazy" onerror="handlePackImgError(this, this.dataset.pack)" />' +
           '<div class="good-row-left">' +
             '<span class="good-origin">' + escapeHtml(item.region) + '</span>' +
             '<span class="good-name">' + escapeHtml(item.good) + '</span>' +
@@ -1795,7 +1795,7 @@
           const imgSrc = getPackImageSrc(name);
           div.innerHTML =
             '<button type="button" class="run-slot-remove" data-idx="' + i + '" title="Remove">×</button>' +
-            '<img class="run-slot-img" src="' + imgSrc + '" data-pack="' + escapeHtml(name) + '" alt="" onerror="this.style.display='none'" />' +
+            '<img class="run-slot-img" src="' + imgSrc + '" data-pack="' + escapeHtml(name) + '" alt="" onerror="handlePackImgError(this, this.dataset.pack)" />' +
             '<span class="run-slot-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</span>' +
             '<span class="run-slot-price">' + escapeHtml(price) + '</span>';
         } else {
@@ -1920,7 +1920,28 @@
     function getPackImageSrc(packName) {
       if (!packName) return "";
       const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
-      return "imgs/" + encodeURIComponent(canonical) + ".webp";
+      const noSpaces = canonical.replace(/\s+/g, "");
+      return "imgs/" + encodeURIComponent(noSpaces) + ".webp";
+    }
+
+    function getPackImageFallbackSrc(packName) {
+      if (!packName) return "";
+      const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
+      const alphanumericOnly = canonical.replace(/[^a-zA-Z0-9]/g, "");
+      return "imgs/" + encodeURIComponent(alphanumericOnly) + ".webp";
+    }
+
+    function handlePackImgError(imgEl, packName) {
+      if (!imgEl || !packName) return;
+      if (!imgEl.dataset.fallbackTried) {
+        imgEl.dataset.fallbackTried = "1";
+        const fb = getPackImageFallbackSrc(packName);
+        if (fb && imgEl.getAttribute("src") !== fb) {
+          imgEl.setAttribute("src", fb);
+          return;
+        }
+      }
+      imgEl.style.display = "none";
     }
 
     function escapeHtml(str) {
