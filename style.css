@@ -46,7 +46,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 999;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(18, 17, 15, 0.96);
   backdrop-filter: blur(6px);
@@ -818,7 +818,7 @@ select:focus, input[type="text"]:focus {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: 999;
   border-top: 1px solid var(--border-subtle);
   background: rgba(18, 17, 15, 0.96);
   backdrop-filter: blur(6px);
