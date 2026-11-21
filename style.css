@@ -26,6 +26,8 @@
 }
 
 body {
+  padding-top: 64px;
+  padding-bottom: 52px;
   background-color: var(--bg-void);
   background-image:
     radial-gradient(circle at 20% 0%, rgba(56, 51, 42, 0.25) 0%, transparent 55%),
@@ -40,9 +42,15 @@ body {
 }
 
 .top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(18, 17, 15, 0.94);
-  padding: 14px 24px;
+  background: rgba(18, 17, 15, 0.96);
+  backdrop-filter: blur(6px);
+  padding: 12px 24px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -806,8 +814,14 @@ select:focus, input[type="text"]:focus {
 }
 
 .footer-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   border-top: 1px solid var(--border-subtle);
-  background: rgba(18, 17, 15, 0.95);
+  background: rgba(18, 17, 15, 0.96);
+  backdrop-filter: blur(6px);
   padding: 10px 24px;
   display: flex;
   flex-wrap: wrap;
