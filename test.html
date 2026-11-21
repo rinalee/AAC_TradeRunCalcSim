@@ -2427,14 +2427,18 @@
         return;
       }
       if (e.key === "r" || e.key === "R") {
-        
-    document.getElementById("showCraftDetailsBtn").addEventListener("click", openCraftModalForSelectedPack);
-    document.getElementById("craftModalClose").addEventListener("click", closeCraftModal);
-    document.getElementById("craftModalBackdrop").addEventListener("click", e => {
-      if (e.target && e.target.id === "craftModalBackdrop") {
-        closeCraftModal();
-      }
-    });
+        const showCraftBtn = document.getElementById("showCraftDetailsBtn");
+    const craftCloseBtn = document.getElementById("craftModalClose");
+    const craftBackdrop = document.getElementById("craftModalBackdrop");
+    if (showCraftBtn) showCraftBtn.addEventListener("click", openCraftModalForSelectedPack);
+    if (craftCloseBtn) craftCloseBtn.addEventListener("click", closeCraftModal);
+    if (craftBackdrop) {
+      craftBackdrop.addEventListener("click", e => {
+        if (e.target && e.target.id === "craftModalBackdrop") {
+          closeCraftModal();
+        }
+      });
+    }
 
     loadSheetData();
       } else if (e.key === "x" || e.key === "X") {
