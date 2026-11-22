@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArcheAge Chronicles — Trading Post Info & Route Estimator</title>
+  <script type="text/javascript" nonce="bd47437d203941c8a1c345e8059" src="//local.adguard.org?ts=1795313050192&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjAzOGI2YTk3NGE1OGM5NTczMDAwNjYwYzE2MGQ3NTQ2MTA0YTQ0MDEyNjExMWU1MGMSCxIHEKaX9q3tHhgB%26filename%3Dindex.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="bd47437d203941c8a1c345e8059" src="//local.adguard.org?ts=1795313050192&amp;name=AdGuard%20Extra&amp;type=user-script"></script><link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="top-bar">
+    <div class="brand">
+      <span class="diamond-icon"></span>
+      <h1 class="brand-title">Trading Post Info</h1>
+      <span class="brand-sub">ArcheAge Chronicles — Trade Run Estimator</span>
+    </div>
+    <div class="sync-status">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText">Initializing...</span>
+      <button id="refreshBtn" class="btn-ghost" title="Reload live CSV data">
+        <span class="key-cap">R</span> Refresh Sheet
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="estimator-panel">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="diamond-icon" style="width:8px;height:8px;"></span>
+          <span>Route Configuration</span>
+        </div>
+        <button id="swapBtn" class="btn-ghost" title="Swap Departure & Arrival Outposts">
+          <span class="key-cap">X</span> Swap Outposts
+        </button>
+      </div>
+
+      <div class="controls-grid">
+        <div class="field-group">
+          <label class="field-label" for="originSelect">
+            <span>Departure / Dispatch Outpost</span>
+            <span id="originCount"></span>
+          </label>
+          <select id="originSelect">
+            <option value="ALL">All Outposts / Regions</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="goodSelect">
+            <span>Trade Good (Pack)</span>
+            <span id="goodCount"></span>
+          </label>
+          <select id="goodSelect"></select>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="destSelect">
+            <span>Arrival Trading Post (Sell At)</span>
+            <span id="destCount"></span>
+          </label>
+          <select id="destSelect"></select>
+        </div>
+      </div>
+    </section>
+
+    <div class="main-grid">
+      <aside class="panel">
+        <div id="saleControls">
+          <div class="filter-pills">
+            <button class="pill active" data-filter="all">All</button>
+            <button class="pill" data-filter="gold">Gold Only</button>
+            <button class="pill" data-filter="item">Items / Mats</button>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <input type="text" id="searchInput" placeholder="Filter pack or origin region..." />
+          </div>
+        </div>
+
+        <div id="leftList" class="goods-list">
+          <div class="empty-msg">Loading trading post data...</div>
+        </div>
+      </aside>
+
+      <section class="detail-stack">
+        <div class="info-card">
+          <div class="info-title">
+            <span id="detailGoodName">—</span>
+            <span id="detailRouteBadge" style="font-size:0.82rem; color:var(--text-secondary);"></span>
+          </div>
+
+          <table class="info-meta-table">
+            <tr>
+              <td>Item Name</td>
+              <td id="metaItemName">—</td>
+            </tr>
+            <tr>
+              <td>Trademark Region</td>
+              <td id="metaRegion">—</td>
+            </tr>
+            <tr>
+              <td>Dispatched From</td>
+              <td id="metaDispatchOutpost">—</td>
+            </tr>
+            <tr>
+              <td>Selling Destination</td>
+              <td id="metaDestOutpost">—</td>
+            </tr>
+          </table>
+
+          <div id="costSection" class="cost-box" style="display:none;">
+            <div class="cost-row-line">
+              <span class="reward-label" style="margin:0;">Cost / Packing Cost</span>
+              <span id="buyPriceText" class="mono text-gold" style="font-size:1.05rem;">—</span>
+            </div>
+            <div id="matsRow" style="display:none; flex-direction:column; gap:4px;">
+              <span class="reward-label" style="margin:0;">Materials Required</span>
+              <div id="matsList" class="mats-list"></div>
+            </div>
+          </div>
+
+          <div class="reward-label">Estimated Rewards & Net Profit (Based on Standard Market Prices)</div>
+          <div class="reward-grid">
+            <div id="rewardBox" class="reward-box">
+              <div>
+                <div class="reward-label">Gross Payout</div>
+                <div class="reward-value" id="rewardValue">—</div>
+              </div>
+              <div class="reward-sub" id="rewardSub"></div>
+            </div>
+
+            <div id="profitBox" class="reward-box" style="display:none;">
+              <div>
+                <div class="reward-label">Net Profit (After Gold Buy Price)</div>
+                <div class="reward-value" id="profitValue">—</div>
+              </div>
+              <div class="reward-sub" id="profitSub"></div>
+            </div>
+          </div>
+
+          <div class="game-note">
+            <span>!</span>
+            <span>Selling non-primary trade goods yields gold only, at a reduced price.</span>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <div class="section-header" style="margin-bottom: 10px;">
+            <div class="section-title">
+              <span>Destination Comparison for Selected Pack</span>
+            </div>
+            <span style="font-size:0.75rem; color:var(--text-secondary);">Click a row to select destination</span>
+          </div>
+
+          <table class="comp-table">
+            <thead>
+              <tr>
+                <th>Arrival Trading Post</th>
+                <th>Reward Type</th>
+                <th>Gross Payout</th>
+                <th>Avg Gold</th>
+                <th id="profitColHeader">Net Profit (Avg)</th>
+              </tr>
+            </thead>
+            <tbody id="comparisonBody"></tbody>
+          </table>
+        </div>
+
+        <div class="info-card" id="runSimulatorCard">
+          <div class="section-header" style="margin-bottom: 12px;">
+            <div class="section-title">
+              <span class="diamond-icon" style="width:8px;height:8px;"></span>
+              <span>Trade Run Simulation</span>
+            </div>
+            <span class="run-capacity" id="runCapacityLabel">0 / 7 packs</span>
+          </div>
+
+          <div class="run-actions">
+            <button type="button" id="runAddOneBtn" class="btn-ghost" title="Add currently selected pack">+ Add Selected Pack</button>
+            <button type="button" id="runFillBtn" class="btn-ghost" title="Fill remaining slots with selected pack">Fill ×7 with Selected</button>
+            <button type="button" id="runClearBtn" class="btn-ghost" title="Clear all slots">Clear Run</button>
+          </div>
+
+          <div class="run-slots" id="runSlots"></div>
+
+          <div class="reward-label" style="margin-bottom: 8px;">Run Totals (at selected Arrival · based on avg market)</div>
+          <div class="run-summary">
+            <div class="run-stat">
+              <div class="run-stat-label">Total Buy Cost</div>
+              <div class="run-stat-value text-gold" id="runTotalCost">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Gross Payout (min ~ max)</div>
+              <div class="run-stat-value text-gold" id="runGrossRange">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Gross Avg</div>
+              <div class="run-stat-value text-gold" id="runGrossAvg">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Net Profit (Avg)</div>
+              <div class="run-stat-value" id="runNetAvg">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">ROI (Avg)</div>
+              <div class="run-stat-value" id="runRoi">—</div>
+            </div>
+            <div class="run-stat">
+              <div class="run-stat-label">Item Rewards</div>
+              <div class="run-stat-value text-item" id="runItems" style="font-size:0.85rem; font-family:inherit;">—</div>
+            </div>
+          </div>
+          <div class="game-note" style="margin-top:12px;">
+            <span>!</span>
+            <span>Wagon capacity: 7 packs per run. Gold rewards use sheet min/max ranges; item rewards are listed separately and not converted to gold.</span>
+          </div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer-bar">
+    <div class="shortcuts">
+      <span class="shortcut-item"><span class="key-cap">R</span> Reload Google Sheet</span>
+      <span class="shortcut-item"><span class="key-cap">X</span> Swap Outposts</span>
+      <span class="shortcut-item"><span class="key-cap">/</span> Focus Search</span>
+    </div>
+    <div id="footerSource">Google Sheet CSV</div>
+  </footer>
+  <script src="app.js" defer></script>
+</body>
+</html>
