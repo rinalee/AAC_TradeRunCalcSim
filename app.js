@@ -889,7 +889,7 @@ function escapeHtml(str) {
     .replace(/&/g, "&")
     .replace(/</g, "<")
     .replace(/>/g, ">")
-    .replace(/"/g, """);
+    .replace(/"/g, '"');
 }
 
 originSelect.addEventListener("change", () => {
