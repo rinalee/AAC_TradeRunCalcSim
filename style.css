@@ -1132,3 +1132,8 @@ select:focus, input[type="text"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.map-route-inline path {
+  fill: #d62828 !important;
+  stroke: none !important;
+}
