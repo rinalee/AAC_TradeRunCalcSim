@@ -971,12 +971,9 @@ select:focus, input[type="text"]:focus {
   height: 4712px;
   max-width: none;
   max-height: none;
-  z-index: 2;
-  opacity: 0.95;
+  display: block;
   pointer-events: none;
   user-select: none;
-  filter: brightness(0) saturate(100%) invert(24%) sepia(93%) saturate(4791%) hue-rotate(353deg) brightness(95%) contrast(112%)
-    drop-shadow(0 0 6px rgba(18, 17, 15, 0.9));
 }
 
 .map-base-img {
