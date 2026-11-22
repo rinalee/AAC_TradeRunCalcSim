@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ArcheAge Chronicles — Trading Post Info & Route Estimator</title>
-  <script type="text/javascript" nonce="bd47437d203941c8a1c345e8059" src="//local.adguard.org?ts=1795313050192&amp;type=content-script&amp;dmn=contribution.usercontent.google.com&amp;url=https%3A%2F%2Fcontribution.usercontent.google.com%2Fdownload%3Fc%3DCgxiYXJkX3N0b3JhZ2USUBINcmVzcG9uc2VfZGF0YRo_CjAzOGI2YTk3NGE1OGM5NTczMDAwNjYwYzE2MGQ3NTQ2MTA0YTQ0MDEyNjExMWU1MGMSCxIHEKaX9q3tHhgB%26filename%3Dindex.html%26opi%3D103135050&amp;app=chrome.exe&amp;css=3&amp;js=1&amp;rel=1&amp;rji=1&amp;sbe=1&amp;stealth=1&amp;st-dnt"></script><script type="text/javascript" nonce="bd47437d203941c8a1c345e8059" src="//local.adguard.org?ts=1795313050192&amp;name=AdGuard%20Extra&amp;type=user-script"></script><link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
@@ -65,7 +64,48 @@
     </section>
 
     <div class="main-grid">
-      <aside class="panel">
+      <aside class="panel left-sidebar">
+        <div class="map-widget" id="mapWidget">
+          <div class="map-header">
+            <span class="map-title">
+              <span class="diamond-icon" style="width:7px;height:7px;"></span>
+              <span>World Map</span>
+            </span>
+            <div class="map-controls">
+              <button type="button" id="mapZoomInBtn" class="map-btn" title="Zoom in">+</button>
+              <button type="button" id="mapZoomOutBtn" class="map-btn" title="Zoom out">−</button>
+              <button type="button" id="mapFitBtn" class="map-btn" title="Fit map / active route">Fit</button>
+              <button type="button" id="mapExpandBtn" class="map-btn" title="Expand / collapse map height">⤢</button>
+            </div>
+          </div>
+
+          <div class="map-viewport" id="mapViewport">
+            <div class="map-stage" id="mapStage">
+              <img
+                id="worldMapImg"
+                class="map-base-img"
+                src="imgs/worldmap.webp"
+                alt="ArcheAge Chronicles World Map"
+                draggable="false"
+              />
+              <img
+                id="routeOverlayImg"
+                class="map-route-overlay"
+                src=""
+                alt=""
+                draggable="false"
+                style="display:none;"
+              />
+              <div id="mapMarkersLayer" class="map-markers-layer"></div>
+            </div>
+
+            <div class="map-hud-bottom">
+              <span id="mapCoordsReadout" class="mono">x: —, y: —</span>
+              <span id="mapRouteLabel" class="map-route-tag">Select departure &amp; arrival</span>
+            </div>
+          </div>
+        </div>
+
         <div id="saleControls">
           <div class="filter-pills">
             <button class="pill active" data-filter="all">All</button>
