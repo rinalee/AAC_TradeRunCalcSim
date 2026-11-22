@@ -1024,7 +1024,7 @@ const OUTPOST_COORDS = {
   "Watcher's Harbor Trading Post":     { x: 4330, y: 3331 },
   "Jubilant Village Trading Post":     { x: 2221, y: 3278 },
   "Waterdrift Trading Post":           { x: 2620, y: 1787 },
-  "Stargazer Trading Post":            { x: 4388, y: 1998 },
+  "Stargazer Trading Post":            { x: 4420, y: 1981 },
   "Shadowpath Temple Trading Post":    { x: 4422, y: 940 }
 };
 
