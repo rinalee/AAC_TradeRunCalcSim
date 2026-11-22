@@ -851,6 +851,7 @@ function addPackToRun(packName, count) {
 }
 
 function renderAll() {
+  renderMap();
   renderLeftPanel();
   renderDetailsAndComparison();
   renderRunSimulation();
@@ -984,5 +985,357 @@ document.getElementById("runClearBtn").addEventListener("click", () => {
   state.runSlots = [];
   renderRunSimulation();
 });
+
+
+// ============================================================================
+// INTERACTIVE WORLD MAP (6232 x 4712 native image coordinate space)
+// ============================================================================
+const MAP_WIDTH = 6232;
+const MAP_HEIGHT = 4712;
+
+// Coordonnées (x, y) en pixels sur worldmap.webp (6232 x 4712).
+// Survole la carte ou clique sur le fond pour copier les coordonnées x, y exactes !
+const OUTPOST_COORDS = {
+  "Seaglass Harbor Trading Post":     { x: 1850, y: 3120 },
+  "Watcher's Harbor Trading Post":     { x: 2420, y: 2680 },
+  "Jubilant Village Trading Post":     { x: 3180, y: 2410 },
+  "Waterdrift Trading Post":           { x: 3790, y: 2890 },
+  "Stargazer Trading Post":            { x: 4320, y: 2150 },
+  "Shadowpath Temple Trading Post":    { x: 4860, y: 2740 }
+};
+
+// Optionnel : association explicite "Départ -> Arrivée" vers le fichier image transparent du trajet.
+// Si non défini ici, le script cherchera automatiquement dans imgs/routes/<DepartSlug>_to_<ArriveeSlug>.webp (puis .png)
+const ROUTE_OVERLAYS = {
+  // Exemple :
+  // "Seaglass Harbor Trading Post->Watcher's Harbor Trading Post": "imgs/routes/seaglass_to_watchers.webp"
+};
+
+function slugifyOutpost(name) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/trading post/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+function getEffectiveDepartureOutpost() {
+  if (state.selectedOrigin && state.selectedOrigin !== "ALL") {
+    return state.selectedOrigin;
+  }
+  const goodObj = state.allGoods.find(g => g.name === state.selectedGood);
+  return goodObj ? goodObj.originOutpost : "";
+}
+
+function getRouteOverlayCandidates(originName, destName) {
+  if (!originName || !destName || originName === destName) return [];
+  const keyDirect = originName + "->" + destName;
+  if (ROUTE_OVERLAYS[keyDirect]) {
+    return [ROUTE_OVERLAYS[keyDirect]];
+  }
+  const oSlug = slugifyOutpost(originName);
+  const dSlug = slugifyOutpost(destName);
+  return [
+    "imgs/routes/" + oSlug + "_to_" + dSlug + ".webp",
+    "imgs/routes/" + oSlug + "_to_" + dSlug + ".png",
+    "imgs/routes/" + dSlug + "_to_" + oSlug + ".webp",
+    "imgs/routes/" + dSlug + "_to_" + oSlug + ".png"
+  ];
+}
+
+const mapState = {
+  scale: 0.08,
+  minScale: 0.04,
+  maxScale: 1.5,
+  tx: 0,
+  ty: 0,
+  isDragging: false,
+  dragMoved: false,
+  startX: 0,
+  startY: 0,
+  startTx: 0,
+  startTy: 0,
+  initialized: false
+};
+
+const mapWidget = document.getElementById("mapWidget");
+const mapViewport = document.getElementById("mapViewport");
+const mapStage = document.getElementById("mapStage");
+const mapMarkersLayer = document.getElementById("mapMarkersLayer");
+const routeOverlayImg = document.getElementById("routeOverlayImg");
+const mapCoordsReadout = document.getElementById("mapCoordsReadout");
+const mapRouteLabel = document.getElementById("mapRouteLabel");
+
+function clampMapTransform() {
+  if (!mapViewport) return;
+  const vw = mapViewport.clientWidth || 348;
+  const vh = mapViewport.clientHeight || 270;
+  const minFit = Math.min(vw / MAP_WIDTH, vh / MAP_HEIGHT) * 0.85;
+  mapState.minScale = Math.max(0.03, minFit);
+  mapState.scale = Math.min(mapState.maxScale, Math.max(mapState.minScale, mapState.scale));
+
+  const sw = MAP_WIDTH * mapState.scale;
+  const sh = MAP_HEIGHT * mapState.scale;
+  const margin = 60;
+
+  if (sw <= vw) {
+    mapState.tx = (vw - sw) / 2;
+  } else {
+    mapState.tx = Math.min(margin, Math.max(vw - sw - margin, mapState.tx));
+  }
+
+  if (sh <= vh) {
+    mapState.ty = (vh - sh) / 2;
+  } else {
+    mapState.ty = Math.min(margin, Math.max(vh - sh - margin, mapState.ty));
+  }
+}
+
+function applyMapTransform() {
+  if (!mapStage) return;
+  clampMapTransform();
+  mapStage.style.transform =
+    "translate3d(" + mapState.tx.toFixed(2) + "px, " + mapState.ty.toFixed(2) + "px, 0) scale(" + mapState.scale.toFixed(5) + ")";
+  // Keep outpost marker icons at a readable screen size while anchored to exact (x, y)
+  const invScale = Math.min(28, Math.max(0.85, 1 / mapState.scale));
+  mapStage.style.setProperty("--inv-scale", invScale.toFixed(4));
+}
+
+function zoomMapAt(factor, clientX, clientY) {
+  if (!mapViewport) return;
+  const rect = mapViewport.getBoundingClientRect();
+  const px = clientX - rect.left;
+  const py = clientY - rect.top;
+
+  const worldX = (px - mapState.tx) / mapState.scale;
+  const worldY = (py - mapState.ty) / mapState.scale;
+
+  const nextScale = Math.min(mapState.maxScale, Math.max(mapState.minScale, mapState.scale * factor));
+  mapState.scale = nextScale;
+  mapState.tx = px - worldX * nextScale;
+  mapState.ty = py - worldY * nextScale;
+  applyMapTransform();
+}
+
+function fitMapToView(focusPoints) {
+  if (!mapViewport) return;
+  const vw = mapViewport.clientWidth || 348;
+  const vh = mapViewport.clientHeight || 270;
+
+  if (Array.isArray(focusPoints) && focusPoints.length >= 2) {
+    const xs = focusPoints.map(p => p.x);
+    const ys = focusPoints.map(p => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    const boxW = Math.max(650, maxX - minX);
+    const boxH = Math.max(500, maxY - minY);
+    const pad = 1.65;
+    const targetScale = Math.min(vw / (boxW * pad), vh / (boxH * pad), 0.45);
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    mapState.scale = targetScale;
+    mapState.tx = vw / 2 - cx * mapState.scale;
+    mapState.ty = vh / 2 - cy * mapState.scale;
+  } else {
+    mapState.scale = Math.min(vw / MAP_WIDTH, vh / MAP_HEIGHT);
+    mapState.tx = (vw - MAP_WIDTH * mapState.scale) / 2;
+    mapState.ty = (vh - MAP_HEIGHT * mapState.scale) / 2;
+  }
+  applyMapTransform();
+}
+
+function updateRouteOverlay(originName, destName) {
+  if (!routeOverlayImg || !mapRouteLabel) return;
+  const candidates = getRouteOverlayCandidates(originName, destName);
+  if (!candidates.length) {
+    routeOverlayImg.style.display = "none";
+    routeOverlayImg.removeAttribute("src");
+    mapRouteLabel.textContent = originName && destName && originName === destName
+      ? "Same departure & arrival"
+      : "Select departure & arrival";
+    return;
+  }
+
+  const shortOrigin = originName.replace(/ Trading Post$/i, "");
+  const shortDest = destName.replace(/ Trading Post$/i, "");
+  mapRouteLabel.textContent = shortOrigin + " → " + shortDest;
+
+  let idx = 0;
+  function tryNext() {
+    if (idx >= candidates.length) {
+      routeOverlayImg.style.display = "none";
+      return;
+    }
+    const src = candidates[idx++];
+    routeOverlayImg.onerror = tryNext;
+    routeOverlayImg.onload = () => {
+      routeOverlayImg.style.display = "block";
+    };
+    routeOverlayImg.src = src;
+  }
+  tryNext();
+}
+
+function renderMap() {
+  if (!mapMarkersLayer) return;
+
+  const activeOrigin = getEffectiveDepartureOutpost();
+  const activeDest = state.selectedDest;
+
+  // Build list of outposts to display (from loaded sheet + any configured coordinates)
+  const names = new Set(Object.keys(OUTPOST_COORDS));
+  for (const op of state.outposts) {
+    names.add(op.name);
+  }
+
+  mapMarkersLayer.innerHTML = "";
+  const activePts = [];
+
+  for (const name of names) {
+    const coord = OUTPOST_COORDS[name];
+    if (!coord) continue;
+
+    const isOrigin = name === activeOrigin;
+    const isDest = name === activeDest && activeDest !== activeOrigin;
+    if (isOrigin || isDest) activePts.push(coord);
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "map-marker" + (isOrigin ? " is-origin" : "") + (isDest ? " is-dest" : "");
+    btn.style.left = coord.x + "px";
+    btn.style.top = coord.y + "px";
+    btn.title = name + " (" + coord.x + ", " + coord.y + ") — Click: Arrival | Shift+Click: Departure";
+
+    const shortName = name.replace(/ Trading Post$/i, "");
+    const badgeHtml = isOrigin
+      ? '<span class="map-marker-badge">DEP</span>'
+      : (isDest ? '<span class="map-marker-badge">ARR</span>' : "");
+
+    btn.innerHTML =
+      '<div class="map-marker-icon-wrap">' +
+        '<img class="map-marker-icon" src="imgs/outpost.webp" alt="" />' +
+        badgeHtml +
+      '</div>' +
+      '<span class="map-marker-label">' + escapeHtml(shortName) + '</span>';
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!state.outposts.some(o => o.name === name)) return;
+      if (e.shiftKey) {
+        state.selectedOrigin = name;
+        originSelect.value = name;
+        updateGoodDropdown();
+      } else {
+        state.selectedDest = name;
+        destSelect.value = name;
+      }
+      renderAll();
+    });
+
+    mapMarkersLayer.appendChild(btn);
+  }
+
+  updateRouteOverlay(activeOrigin, activeDest);
+
+  if (!mapState.initialized) {
+    mapState.initialized = true;
+    fitMapToView(activePts.length >= 2 ? activePts : null);
+  } else {
+    applyMapTransform();
+  }
+}
+
+if (mapViewport) {
+  mapViewport.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
+    zoomMapAt(factor, e.clientX, e.clientY);
+  }, { passive: false });
+
+  mapViewport.addEventListener("dblclick", (e) => {
+    zoomMapAt(1.6, e.clientX, e.clientY);
+  });
+
+  mapViewport.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".map-marker")) return;
+    mapState.isDragging = true;
+    mapState.dragMoved = false;
+    mapState.startX = e.clientX;
+    mapState.startY = e.clientY;
+    mapState.startTx = mapState.tx;
+    mapState.startTy = mapState.ty;
+    mapViewport.classList.add("dragging");
+    mapViewport.setPointerCapture(e.pointerId);
+  });
+
+  mapViewport.addEventListener("pointermove", (e) => {
+    const rect = mapViewport.getBoundingClientRect();
+    const wx = Math.round((e.clientX - rect.left - mapState.tx) / mapState.scale);
+    const wy = Math.round((e.clientY - rect.top - mapState.ty) / mapState.scale);
+    if (mapCoordsReadout && wx >= 0 && wx <= MAP_WIDTH && wy >= 0 && wy <= MAP_HEIGHT) {
+      mapCoordsReadout.textContent = "x: " + wx + ", y: " + wy;
+    }
+
+    if (!mapState.isDragging) return;
+    const dx = e.clientX - mapState.startX;
+    const dy = e.clientY - mapState.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      mapState.dragMoved = true;
+    }
+    mapState.tx = mapState.startTx + dx;
+    mapState.ty = mapState.startTy + dy;
+    applyMapTransform();
+  });
+
+  const endDrag = (e) => {
+    if (!mapState.isDragging) return;
+    if (!mapState.dragMoved && mapCoordsReadout) {
+      const rect = mapViewport.getBoundingClientRect();
+      const wx = Math.round((e.clientX - rect.left - mapState.tx) / mapState.scale);
+      const wy = Math.round((e.clientY - rect.top - mapState.ty) / mapState.scale);
+      if (wx >= 0 && wx <= MAP_WIDTH && wy >= 0 && wy <= MAP_HEIGHT) {
+        const snippet = "{ x: " + wx + ", y: " + wy + " }";
+        mapCoordsReadout.textContent = "Copied " + snippet;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(snippet).catch(() => {});
+        }
+      }
+    }
+    mapState.isDragging = false;
+    mapViewport.classList.remove("dragging");
+  };
+
+  mapViewport.addEventListener("pointerup", endDrag);
+  mapViewport.addEventListener("pointercancel", endDrag);
+}
+
+document.getElementById("mapZoomInBtn")?.addEventListener("click", () => {
+  const rect = mapViewport.getBoundingClientRect();
+  zoomMapAt(1.3, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+document.getElementById("mapZoomOutBtn")?.addEventListener("click", () => {
+  const rect = mapViewport.getBoundingClientRect();
+  zoomMapAt(1 / 1.3, rect.left + rect.width / 2, rect.top + rect.height / 2);
+});
+
+document.getElementById("mapFitBtn")?.addEventListener("click", () => {
+  const o = getEffectiveDepartureOutpost();
+  const d = state.selectedDest;
+  const pts = [];
+  if (o && OUTPOST_COORDS[o]) pts.push(OUTPOST_COORDS[o]);
+  if (d && d !== o && OUTPOST_COORDS[d]) pts.push(OUTPOST_COORDS[d]);
+  fitMapToView(pts.length >= 2 ? pts : null);
+});
+
+document.getElementById("mapExpandBtn")?.addEventListener("click", () => {
+  if (!mapWidget) return;
+  mapWidget.classList.toggle("expanded");
+  setTimeout(() => applyMapTransform(), 210);
+});
+
+window.addEventListener("resize", () => applyMapTransform());
 
 loadSheetData();
