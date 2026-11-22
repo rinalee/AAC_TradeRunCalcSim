@@ -1020,12 +1020,12 @@ const MAP_HEIGHT = 4712;
 // Survole la carte pour lire x, y et clique sur le fond pour copier { x: ..., y: ... } !
 // Tant qu'un Trading Post n'a pas de coordonnées renseignées ici, son icône n'est pas affichée.
 const OUTPOST_COORDS = {
-  // "Seaglass Harbor Trading Post":     { x: 1850, y: 3120 },
-  // "Watcher's Harbor Trading Post":     { x: 2420, y: 2680 },
-  // "Jubilant Village Trading Post":     { x: 3180, y: 2410 },
-  // "Waterdrift Trading Post":           { x: 3790, y: 2890 },
-  // "Stargazer Trading Post":            { x: 4320, y: 2150 },
-  // "Shadowpath Temple Trading Post":    { x: 4860, y: 2740 }
+  "Seaglass Harbor Trading Post":     { x: 4965, y: 3672 },
+  "Watcher's Harbor Trading Post":     { x: 4330, y: 3331 },
+  "Jubilant Village Trading Post":     { x: 2221, y: 3278 },
+  "Waterdrift Trading Post":           { x: 2620, y: 1787 },
+  "Stargazer Trading Post":            { x: 4388, y: 1998 },
+  "Shadowpath Temple Trading Post":    { x: 4422, y: 940 }
 };
 
 // Optionnel : association explicite "Départ -> Arrivée" vers le fichier image transparent du trajet.
