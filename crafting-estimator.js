@@ -191,7 +191,11 @@
     const rawMaterials = new Map();
     const intermediateMaterials = new Map();
 
-    const recipe = recipesMap ? recipesMap.get(key) : null;
+    let recipe = recipesMap ? recipesMap.get(key) : null;
+    if (!recipe && recipesMap && typeof recipesMap.get === "function") {
+      const altCanon = normalizeItemKey(canonicalPackKey(itemName));
+      recipe = recipesMap.get(altCanon) || null;
+    }
 
     if (!recipe || safeQty === 0) {
       if (safeQty > 0) {
@@ -334,12 +338,106 @@
   /**
    * Estime 1 pack directement depuis une entrée Lookup + la map Craft/Recipes.
    */
+
+  function canonicalPackKey(name) {
+    return String(name || "")
+      .trim()
+      .toLowerCase()
+      .replace(/trade box$/i, "trade goods")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function resolveLookupEntry(packName, lookupMap) {
+    if (!lookupMap || !packName) return null;
+    const rawLower = String(packName).trim().toLowerCase();
+    const normKey = normalizeItemKey(packName);
+    const canonKey = canonicalPackKey(packName);
+    const canonNormKey = normalizeItemKey(canonKey);
+
+    let entry =
+      lookupMap.get(rawLower) ||
+      lookupMap.get(normKey) ||
+      lookupMap.get(canonKey) ||
+      lookupMap.get(canonNormKey) ||
+      null;
+
+    if (!entry && typeof lookupMap.values === "function") {
+      for (const v of lookupMap.values()) {
+        if (!v || typeof v !== "object") continue;
+        const candidateName = v.packName || v.name || "";
+        if (
+          canonicalPackKey(candidateName) === canonKey ||
+          normalizeItemKey(candidateName) === canonNormKey
+        ) {
+          entry = v;
+          break;
+        }
+      }
+    }
+
+    if (!entry) return null;
+
+    // Normalize both schema shapes:
+    // Shape A (buildLookupPackMap): { packName, trademarkRegion, cost, packingCost, material1, quantity, hasArcaneSealedChest, hasBlankTradeCertificate }
+    // Shape B (app.js parseLookupTable): { name, region, costGold, packingCostGold, buyPriceGold, materials: [{name, qty}, ...] }
+    if (Array.isArray(entry.materials)) {
+      let material1 = entry.material1 || "";
+      let quantity = entry.quantity || 0;
+      let hasArcaneSealedChest = Boolean(entry.hasArcaneSealedChest);
+      let hasBlankTradeCertificate = Boolean(entry.hasBlankTradeCertificate);
+      const extraMaterials = [];
+
+      for (const m of entry.materials) {
+        if (!m) continue;
+        const mName = typeof m === "string" ? m : (m.name || "");
+        const mQty = typeof m === "string" ? 1 : (Number(m.qty) || 1);
+        const mLower = mName.toLowerCase().trim();
+        if (mLower === "arcane sealed chest") {
+          hasArcaneSealedChest = true;
+        } else if (mLower === "blank trade certificate") {
+          hasBlankTradeCertificate = true;
+        } else if (!material1 && mName) {
+          material1 = mName;
+          quantity = mQty;
+        } else if (mName) {
+          extraMaterials.push({ name: mName, qty: mQty });
+        }
+      }
+
+      const cost = entry.cost !== undefined ? Number(entry.cost) || 0 : (Number(entry.costGold) || 0);
+      const packingCost = entry.packingCost !== undefined ? Number(entry.packingCost) || 0 : (Number(entry.packingCostGold) || 0);
+
+      return {
+        packName: entry.packName || entry.name || packName,
+        trademarkRegion: entry.trademarkRegion || entry.region || "",
+        cost,
+        packingCost,
+        material1,
+        quantity: quantity || 1,
+        hasArcaneSealedChest,
+        hasBlankTradeCertificate,
+        extraMaterials
+      };
+    }
+
+    return {
+      ...entry,
+      extraMaterials: Array.isArray(entry.extraMaterials) ? entry.extraMaterials : []
+    };
+  }
+
   function estimatePackFromLookup(packName, lookupMap, recipesMap) {
     if (!lookupMap) return null;
-    const entry = lookupMap.get(normalizeItemKey(packName));
+    const entry = resolveLookupEntry(packName, lookupMap);
     if (!entry) return null;
 
     const extraItems = [];
+    for (const em of entry.extraMaterials || []) {
+      if (em && em.name && em.qty > 0) {
+        extraItems.push({ name: em.name, qty: em.qty });
+      }
+    }
     if (entry.hasArcaneSealedChest) {
       extraItems.push({ name: "Arcane Sealed Chest", qty: 1 });
     }
