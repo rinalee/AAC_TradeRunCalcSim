@@ -52,8 +52,9 @@ An interactive web-based trade run calculator, route visualizer, and profit esti
 ├── app.js              # CSV parser, profit & run calculations, and interactive map engine
 └── imgs/               # Map assets, outpost markers, route overlays, and pack icons
     ├── worldmap.webp   # Full-resolution world map (6232 x 4712)
-    ├── outpost.webp    # Trading Post map marker icon
+    ├── outpost.svg     # Trading Post map marker icon
     └── routes/         # Transparent route overlay images (<origin>_to_<dest>.webp)
+    └── tradepacks/     # Trade Packs images (<tradepack>.webp)
 ```
 
 ---
