@@ -1102,6 +1102,8 @@ function renderCraftingEstimatorPanels() {
         '<div style="margin-top:4px;"><strong>Raw Materials:</strong> ' + escapeHtml(rawText) + '</div>';
     }
   }
+}
+
 
 function getPackImageSrc(packName) {
   if (!packName) return "";
