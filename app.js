@@ -1183,97 +1183,18 @@ function fitMapToView(focusPoints) {
   }
   applyMapTransform();
 }
-const routeInlineContainer = document.getElementById("routeInlineContainer");
-
-function clearRouteDisplay() {
-  if (routeInlineContainer) routeInlineContainer.innerHTML = "";
-  if (routeOverlayImg) {
-    routeOverlayImg.style.display = "none";
-    routeOverlayImg.removeAttribute("src");
-  }
-}
-
-async function renderInlineSvgRoute(url) {
-  if (!routeInlineContainer || !url.toLowerCase().endsWith(".svg")) return false;
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return false;
-    const svgText = await res.text();
-    const doc = new DOMParser().parseFromString(svgText, "image/svg+xml");
-    if (doc.querySelector("parsererror")) return false;
-    const svgEl = doc.querySelector("svg");
-    if (!svgEl) return false;
-
-    if (!svgEl.getAttribute("viewBox")) {
-      svgEl.setAttribute("viewBox", "0 0 6232 4712");
-    }
-    svgEl.setAttribute("width", "6232");
-    svgEl.setAttribute("height", "4712");
-
-    svgEl.querySelectorAll("path, polyline, polygon, line, circle, ellipse, rect").forEach(el => {
-      el.setAttribute("vector-effect", "non-scaling-stroke");
-    });
-
-    routeInlineContainer.innerHTML = "";
-    routeInlineContainer.appendChild(document.importNode(svgEl, true));
-    if (routeOverlayImg) {
-      routeOverlayImg.style.display = "none";
-      routeOverlayImg.removeAttribute("src");
-    }
-    return true;
-  } catch (_) {
-    return false;
-  }
-}
 
 function updateRouteOverlay(originName, destName) {
-  if (!mapRouteLabel) return;
+  if (!routeOverlayImg || !mapRouteLabel) return;
   const candidates = getRouteOverlayCandidates(originName, destName);
   if (!candidates.length) {
-    clearRouteDisplay();
+    routeOverlayImg.style.display = "none";
+    routeOverlayImg.removeAttribute("src");
     mapRouteLabel.textContent = originName && destName && originName === destName
       ? "Same departure & arrival"
       : "Select departure & arrival";
     return;
   }
-
-  const shortOrigin = originName.replace(/ Trading Post$/i, "");
-  const shortDest = destName.replace(/ Trading Post$/i, "");
-  mapRouteLabel.textContent = shortOrigin + " → " + shortDest;
-
-  clearRouteDisplay();
-  const requestToken = Symbol("route");
-  updateRouteOverlay._token = requestToken;
-
-  (async () => {
-    for (const src of candidates) {
-      if (updateRouteOverlay._token !== requestToken) return;
-      if (src.toLowerCase().endsWith(".svg")) {
-        const ok = await renderInlineSvgRoute(src);
-        if (ok) return;
-      }
-    }
-
-    if (updateRouteOverlay._token !== requestToken || !routeOverlayImg) return;
-    let idx = 0;
-    function tryImgNext() {
-      if (updateRouteOverlay._token !== requestToken) return;
-      if (idx >= candidates.length) {
-        routeOverlayImg.style.display = "none";
-        return;
-      }
-      const imgSrc = candidates[idx++];
-      routeOverlayImg.onerror = tryImgNext;
-      routeOverlayImg.onload = () => {
-        if (updateRouteOverlay._token === requestToken) {
-          routeOverlayImg.style.display = "block";
-        }
-      };
-      routeOverlayImg.src = imgSrc;
-    }
-    tryImgNext();
-  })();
-}
 
   const shortOrigin = originName.replace(/ Trading Post$/i, "");
   const shortDest = destName.replace(/ Trading Post$/i, "");
