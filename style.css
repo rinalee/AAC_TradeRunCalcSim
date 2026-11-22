@@ -1140,7 +1140,7 @@ select:focus, input[type="text"]:focus {
   height: 4712px;
   display: block;
   pointer-events: none;
-  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.95));
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.95));
 }
 
 .map-route-inline path,
@@ -1150,6 +1150,11 @@ select:focus, input[type="text"]:focus {
 .map-route-inline circle,
 .map-route-inline ellipse,
 .map-route-inline rect {
+  fill: none !important;
   stroke: #ff2a2a !important;
+  stroke-width: 4px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-dasharray: none !important;
   vector-effect: non-scaling-stroke !important;
 }
