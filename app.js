@@ -948,18 +948,18 @@ function ensureFloatingCraftModal() {
   modal = document.createElement("div");
   modal.id = "craftFloatingModal";
   modal.style.cssText =
-    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;";
+    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;font-family:var(--font-sans,inherit);";
 
   modal.innerHTML =
-    '<div id="craftFloatingBox" style="width:100%;max-width:560px;max-height:84vh;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:#181715;color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);">' +
+    '<div id="craftFloatingBox" style="width:100%;max-width:580px;max-height:84vh;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:#181715;color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);font-family:var(--font-sans,inherit);">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:10px;margin-bottom:12px;">' +
         '<div>' +
-          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7;">Pack Crafting Breakdown</div>' +
-          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;">—</div>' +
+          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7;font-family:var(--font-sans,inherit);">Pack Crafting Breakdown</div>' +
+          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;font-family:var(--font-sans,inherit);">—</div>' +
         '</div>' +
-        '<button type="button" id="craftModalCloseBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.9rem;">✕</button>' +
+        '<button type="button" id="craftModalCloseBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.9rem;font-family:var(--font-sans,inherit);">✕</button>' +
       '</div>' +
-      '<div id="craftModalBody" style="font-size:0.88rem;"></div>' +
+      '<div id="craftModalBody" style="font-size:0.88rem;font-family:var(--font-sans,inherit);"></div>' +
     '</div>';
 
   document.body.appendChild(modal);
@@ -993,23 +993,26 @@ function openFloatingCraftModal(packName) {
   if (!est) {
     bodyEl.innerHTML = '<div class="empty-msg">No crafting breakdown available for this pack.</div>';
   } else {
+    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:var(--font-sans,inherit);";
+    const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;";
+
     const rawHtml = est.rawMaterials.length
-      ? est.rawMaterials.map((m) => '<span class="mat-chip" style="margin:2px;">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      ? est.rawMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
       : '<span style="opacity:0.65;">—</span>';
 
     const midHtml = est.intermediateMaterials.length
-      ? est.intermediateMaterials.map((m) => '<span class="mat-chip" style="margin:2px;">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      ? est.intermediateMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
       : '<span style="opacity:0.65;">—</span>';
 
     bodyEl.innerHTML =
-      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:7px;background:rgba(255,255,255,0.04);margin-bottom:12px;">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:7px;background:rgba(255,255,255,0.04);margin-bottom:12px;font-family:var(--font-sans,inherit);">' +
         '<div>Total Gold: <strong>' + est.totalGoldCost.toLocaleString() + ' G</strong></div>' +
         '<div>Craft Gold: <strong>' + est.craftingGoldTotal.toLocaleString() + ' G</strong></div>' +
         '<div>Pack / Cost: <strong>' + est.packingGoldCost.toLocaleString() + ' G</strong></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
-      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:4px;">Intermediate Sub-Components</div><div>' + midHtml + '</div></div>' +
-      '<div><div style="font-weight:600;margin-bottom:4px;">Total Raw Base Materials (1 Pack)</div><div>' + rawHtml + '</div></div>';
+      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;font-family:var(--font-sans,inherit);">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
+      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:6px;font-family:var(--font-sans,inherit);">Intermediate Sub-Components</div><div style="' + chipWrapStyle + '">' + midHtml + '</div></div>' +
+      '<div><div style="font-weight:600;margin-bottom:6px;font-family:var(--font-sans,inherit);">Total Raw Base Materials (1 Pack)</div><div style="' + chipWrapStyle + '">' + rawHtml + '</div></div>';
   }
 
   modal.style.display = "flex";
@@ -1030,7 +1033,7 @@ function ensureShowDetailsButton() {
     btn.type = "button";
     btn.textContent = "Show details";
     btn.style.cssText =
-      "display:none;margin-top:10px;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;font-size:0.84rem;font-weight:600;cursor:pointer;";
+      "display:none;margin-top:10px;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;font-family:var(--font-sans,inherit);font-size:0.84rem;font-weight:600;cursor:pointer;";
     btn.addEventListener("click", () => {
       if (state.selectedGood) {
         openFloatingCraftModal(state.selectedGood);
@@ -1055,7 +1058,7 @@ function ensureWagonCraftContainer() {
     wagonEl = document.createElement("div");
     wagonEl.id = "wagonCraftSummary";
     wagonEl.style.cssText =
-      "margin-top:10px;padding:9px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);font-size:0.85rem;";
+      "margin-top:10px;padding:9px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);font-family:var(--font-sans,inherit);font-size:0.85rem;";
     wagonHost.appendChild(wagonEl);
   }
   return wagonEl;
