@@ -933,10 +933,10 @@ select:focus, input[type="text"]:focus {
 .map-viewport {
   position: relative;
   width: 100%;
+  height: 348px;
   aspect-ratio: 1 / 1;
-  height: auto;
-  max-height: 75vh;
   overflow: hidden;
+  contain: layout paint;
   background: #0b0a09;
   cursor: grab;
   user-select: none;
@@ -944,7 +944,8 @@ select:focus, input[type="text"]:focus {
 }
 
 .map-widget.expanded .map-viewport {
-  max-height: 85vh;
+  height: 520px;
+  aspect-ratio: auto;
 }
 
 .map-viewport.dragging {
