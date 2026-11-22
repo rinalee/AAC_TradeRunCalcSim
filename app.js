@@ -1039,39 +1039,39 @@ const ROUTE_OVERLAYS = {
   "Seaglass Harbor Trading Post->Shadowpath Temple Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.webp",
 
   // From Watcher's Trading Post
-  "Watcher's Trading Post->Seaglass Harbor Trading Post": "imgs/routes/watchers_harbor_to_seaglass_harbor.webp",
+  "Watcher's Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_watchers_harbor.webp", // réutilise l'inverse
   "Watcher's Trading Post->Jubilant Village Trading Post": "imgs/routes/watchers_harbor_to_jubilant_village.webp",
   "Watcher's Trading Post->Waterdrift Trading Post": "imgs/routes/watchers_harbor_to_waterdrift.webp",
   "Watcher's Trading Post->Stargazer Trading Post": "imgs/routes/watchers_harbor_to_stargazer.webp",
   "Watcher's Trading Post->Shadowpath Temple Trading Post": "imgs/routes/watchers_harbor_to_shadowpath_temple.webp",
 
   // From Jubilant Village Trading Post
-  "Jubilant Village Trading Post->Seaglass Harbor Trading Post": "imgs/routes/jubilant_village_to_seaglass_harbor.webp",
-  "Jubilant Village Trading Post->Watcher's Trading Post": "imgs/routes/jubilant_village_to_watchers_harbor.webp",
+  "Jubilant Village Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.webp", // réutilise l'inverse
+  "Jubilant Village Trading Post->Watcher's Trading Post": "imgs/routes/watchers_harbor_to_jubilant_village.webp", // réutilise l'inverse
   "Jubilant Village Trading Post->Waterdrift Trading Post": "imgs/routes/jubilant_village_to_waterdrift.webp",
   "Jubilant Village Trading Post->Stargazer Trading Post": "imgs/routes/jubilant_village_to_stargazer.webp",
   "Jubilant Village Trading Post->Shadowpath Temple Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.webp",
 
   // From Waterdrift Trading Post
-  "Waterdrift Trading Post->Seaglass Harbor Trading Post": "imgs/routes/waterdrift_to_seaglass_harbor.webp",
-  "Waterdrift Trading Post->Watcher's Trading Post": "imgs/routes/waterdrift_to_watchers_harbor.webp",
-  "Waterdrift Trading Post->Jubilant Village Trading Post": "imgs/routes/waterdrift_to_jubilant_village.webp",
-  "Waterdrift Trading Post->Stargazer Trading Post": "imgs/routes/waterdrift_to_stargazer.webp",
-  "Waterdrift Trading Post->Shadowpath Temple Trading Post": "imgs/routes/waterdrift_to_shadowpath_temple.webp",
+  "Waterdrift Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.webp", // réutilise l'inverse
+  "Waterdrift Trading Post->Watcher's Trading Post": "imgs/routes/watchers_harbor_to_waterdrift.webp", // réutilise l'inverse
+  "Waterdrift Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_waterdrift.webp", // réutilise l'inverse
+  "Waterdrift Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_waterdrift.webp", // réutilise l'inverse
+  "Waterdrift Trading Post->Shadowpath Temple Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.webp", // réutilise l'inverse
 
   // From Stargazer Trading Post
-  "Stargazer Trading Post->Seaglass Harbor Trading Post": "imgs/routes/stargazer_to_seaglass_harbor.webp",
-  "Stargazer Trading Post->Watcher's Trading Post": "imgs/routes/stargazer_to_watchers_harbor.webp",
-  "Stargazer Trading Post->Jubilant Village Trading Post": "imgs/routes/stargazer_to_jubilant_village.webp",
+  "Stargazer Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.webp", // réutilise l'inverse
+  "Stargazer Trading Post->Watcher's Trading Post": "imgs/routes/watchers_harbor_to_stargazer.webp", // réutilise l'inverse
+  "Stargazer Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_stargazer.webp", // réutilise l'inverse
   "Stargazer Trading Post->Waterdrift Trading Post": "imgs/routes/stargazer_to_waterdrift.webp",
   "Stargazer Trading Post->Shadowpath Temple Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.webp",
 
   // From Shadowpath Temple Trading Post
-  "Shadowpath Temple Trading Post->Seaglass Harbor Trading Post": "imgs/routes/shadowpath_temple_to_seaglass_harbor.webp",
-  "Shadowpath Temple Trading Post->Watcher's Trading Post": "imgs/routes/shadowpath_temple_to_watchers_harbor.webp",
-  "Shadowpath Temple Trading Post->Jubilant Village Trading Post": "imgs/routes/shadowpath_temple_to_jubilant_village.webp",
+  "Shadowpath Temple Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.webp", // réutilise l'inverse
+  "Shadowpath Temple Trading Post->Watcher's Trading Post": "imgs/routes/watchers_harbor_to_shadowpath_temple.webp", // réutilise l'inverse
+  "Shadowpath Temple Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.webp", // réutilise l'inverse
   "Shadowpath Temple Trading Post->Waterdrift Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.webp",
-  "Shadowpath Temple Trading Post->Stargazer Trading Post": "imgs/routes/shadowpath_temple_to_stargazer.webp"
+  "Shadowpath Temple Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.webp" // réutilise l'inverse
 };
 
 function slugifyOutpost(name) {
