@@ -46,7 +46,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 999;
+  z-index: 100;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(18, 17, 15, 0.96);
   backdrop-filter: blur(6px);
@@ -234,6 +234,8 @@ select:focus, input[type="text"]:focus {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   padding: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .tabs-bar {
@@ -289,7 +291,7 @@ select:focus, input[type="text"]:focus {
 }
 
 .goods-list {
-  max-height: 540px;
+  max-height: 360px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -818,7 +820,7 @@ select:focus, input[type="text"]:focus {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 999;
+  z-index: 100;
   border-top: 1px solid var(--border-subtle);
   background: rgba(18, 17, 15, 0.96);
   backdrop-filter: blur(6px);
@@ -861,4 +863,268 @@ select:focus, input[type="text"]:focus {
   .goods-list {
     max-height: 320px;
   }
+}
+
+
+/* === Interactive World Map Widget (Left Sidebar) === */
+.left-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.map-widget {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-void);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: var(--bg-row);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 8px;
+}
+
+.map-title {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.map-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.map-btn {
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border-subtle);
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.74rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.map-btn:hover {
+  background: var(--bg-row-hover);
+  border-color: var(--border-strong);
+}
+
+.map-viewport {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  max-height: 75vh;
+  overflow: hidden;
+  background: #0b0a09;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.map-widget.expanded .map-viewport {
+  max-height: 85vh;
+}
+
+.map-viewport.dragging {
+  cursor: grabbing;
+}
+
+.map-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6232px;
+  height: 4712px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.map-base-img,
+.map-route-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6232px;
+  height: 4712px;
+  max-width: none;
+  max-height: none;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.map-base-img {
+  z-index: 1;
+}
+
+.map-route-overlay {
+  z-index: 2;
+  opacity: 0.95;
+}
+
+.map-markers-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6232px;
+  height: 4712px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%) scale(var(--inv-scale, 1));
+  transform-origin: center center;
+  pointer-events: auto;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 4;
+}
+
+.map-marker:hover,
+.map-marker.is-origin,
+.map-marker.is-dest {
+  z-index: 10;
+}
+
+.map-marker-icon-wrap {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(18, 17, 15, 0.78);
+  border: 1px solid rgba(212, 173, 90, 0.55);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
+  transition: transform 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+
+.map-marker:hover .map-marker-icon-wrap {
+  transform: scale(1.16);
+  border-color: var(--bg-active);
+}
+
+.map-marker.is-origin .map-marker-icon-wrap {
+  border: 2px solid var(--profit-pos);
+  box-shadow: 0 0 10px rgba(132, 179, 132, 0.85);
+}
+
+.map-marker.is-dest .map-marker-icon-wrap {
+  border: 2px solid var(--gold);
+  box-shadow: 0 0 10px rgba(212, 173, 90, 0.9);
+}
+
+.map-marker-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.map-marker-badge {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.58rem;
+  font-weight: bold;
+  padding: 1px 4px;
+  line-height: 1.1;
+  border: 1px solid var(--bg-void);
+}
+
+.map-marker.is-origin .map-marker-badge {
+  background: var(--profit-pos);
+  color: #12110f;
+}
+
+.map-marker.is-dest .map-marker-badge {
+  background: var(--gold);
+  color: #12110f;
+}
+
+.map-marker-label {
+  margin-top: 3px;
+  padding: 1px 5px;
+  background: rgba(18, 17, 15, 0.88);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.66rem;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s;
+}
+
+.map-marker:hover .map-marker-label,
+.map-marker.is-origin .map-marker-label,
+.map-marker.is-dest .map-marker-label {
+  opacity: 1;
+}
+
+.map-marker.is-origin .map-marker-label {
+  border-color: var(--profit-pos);
+  color: #cbe6cb;
+}
+
+.map-marker.is-dest .map-marker-label {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.map-hud-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  background: rgba(18, 17, 15, 0.84);
+  border-top: 1px solid rgba(53, 49, 43, 0.75);
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  pointer-events: none;
+}
+
+.map-route-tag {
+  color: var(--gold);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
