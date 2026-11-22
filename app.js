@@ -5,6 +5,9 @@ const SHEET_CSV_URL =
 const LOOKUP_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?gid=2129492780&single=true&output=csv";
 
+// Optional: set the published CSV URL for the "Craft/Recipes" tab (3rd sheet)
+const CRAFT_RECIPES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?gid=1430652523&single=true&output=csv";
+
 const EMBEDDED_MAIN_ROWS = [];
 const EMBEDDED_LOOKUP_ROWS = [];
 
@@ -274,6 +277,7 @@ let state = {
   dispatchByGoodKey: {},
   allGoods: [],
   lookupMap: new Map(),
+  recipesMap: new Map(),
   selectedOrigin: "ALL",
   selectedDest: "",
   selectedGood: "",
@@ -293,7 +297,7 @@ const leftList = document.getElementById("leftList");
 const searchInput = document.getElementById("searchInput");
 const saleControls = document.getElementById("saleControls");
 
-function applyData(outposts, lookupMap, modeLabel, dotClass) {
+function applyData(outposts, lookupMap, modeLabel, dotClass, recipesMap) {
   const dispatchByGoodKey = {};
   const goodsMap = new Map();
 
@@ -324,6 +328,9 @@ function applyData(outposts, lookupMap, modeLabel, dotClass) {
   state.dispatchByGoodKey = dispatchByGoodKey;
   state.allGoods = Array.from(goodsMap.values());
   state.lookupMap = lookupMap;
+  if (recipesMap instanceof Map) {
+    state.recipesMap = recipesMap;
+  }
 
   if (!state.selectedDest || !outposts.some(o => o.name === state.selectedDest)) {
     state.selectedDest = outposts[0].name;
@@ -360,6 +367,7 @@ async function loadSheetData() {
 
   let outposts = [];
   let lookupMap = parseLookupTable(EMBEDDED_LOOKUP_ROWS);
+  let recipesMap = state.recipesMap || new Map();
   let isLiveMain = false;
 
   try {
@@ -406,14 +414,26 @@ async function loadSheetData() {
     } catch (_) {}
   }
 
+  if (CRAFT_RECIPES_CSV_URL && window.CraftingEstimator && typeof window.CraftingEstimator.buildCraftRecipeMap === "function") {
+    try {
+      const craftText = await fetchWithTimeout(CRAFT_RECIPES_CSV_URL + "&_t=" + Date.now());
+      const parsedRecipes = window.CraftingEstimator.buildCraftRecipeMap(craftText);
+      if (parsedRecipes && parsedRecipes.size > 0) {
+        recipesMap = parsedRecipes;
+      }
+    } catch (err) {
+      console.warn("Craft/Recipes CSV fetch failed:", err);
+    }
+  }
+
   if (isLiveMain && outposts.length > 0) {
-    applyData(outposts, lookupMap, "Live Google Sheet CSV", "live");
+    applyData(outposts, lookupMap, "Live Google Sheet CSV", "live", recipesMap);
     return;
   }
 
   const fallbackOutposts = parseTradingPostSheet(EMBEDDED_MAIN_ROWS);
   if (fallbackOutposts.length > 0) {
-    applyData(fallbackOutposts, lookupMap, "Embedded Snapshot (Offline / CORS fallback)", "fallback");
+    applyData(fallbackOutposts, lookupMap, "Embedded Snapshot (Offline / CORS fallback)", "fallback", recipesMap);
   } else {
     statusDot.className = "status-dot error";
     statusText.textContent = "Unable to load Trading Post data";
@@ -740,6 +760,7 @@ function renderRunSimulation() {
       const idx = parseInt(btn.dataset.idx, 10);
       state.runSlots.splice(idx, 1);
       renderRunSimulation();
+      renderCraftingEstimatorPanels();
     });
   });
 
@@ -855,7 +876,102 @@ function renderAll() {
   renderLeftPanel();
   renderDetailsAndComparison();
   renderRunSimulation();
+  renderCraftingEstimatorPanels();
 }
+
+// ============================================================================
+// RECURSIVE CRAFTING TREE & 7-PACK WAGON ESTIMATOR (via crafting-estimator.js)
+// ============================================================================
+function getPackCraftingEstimate(packName) {
+  if (!window.CraftingEstimator || !packName) return null;
+  if (typeof window.CraftingEstimator.estimatePackFromLookup === "function") {
+    return window.CraftingEstimator.estimatePackFromLookup(
+      packName,
+      state.lookupMap,
+      state.recipesMap
+    );
+  }
+  return null;
+}
+
+function getWagonCraftingEstimate(packNames) {
+  if (!window.CraftingEstimator || typeof window.CraftingEstimator.estimateWagonCargo !== "function") {
+    return null;
+  }
+  const list = (packNames || []).slice(0, RUN_CAPACITY);
+  const packEstimates = list
+    .map((name) => getPackCraftingEstimate(name))
+    .filter(Boolean);
+  return window.CraftingEstimator.estimateWagonCargo(packEstimates, RUN_CAPACITY);
+}
+
+function buildCraftTreeNodesHtml(nodes, depth = 0) {
+  if (!Array.isArray(nodes) || nodes.length === 0) return "";
+  return (
+    '<ul class="craft-tree-list" style="margin-left:' + (depth * 14) + 'px;">' +
+    nodes
+      .map((node) => {
+        const meta = node.craftRuns > 0
+          ? ' <span class="craft-node-meta">(' + node.craftRuns + ' craft' + (node.craftRuns > 1 ? "s" : "") + ' · ' + node.craftGoldCost.toLocaleString() + 'G)</span>'
+          : ' <span class="craft-node-meta">(Base)</span>';
+        return (
+          '<li class="craft-tree-node">' +
+            '<span class="craft-node-label">' + escapeHtml(node.neededQty) + '× ' + escapeHtml(node.itemName) + '</span>' +
+            meta +
+            buildCraftTreeNodesHtml(node.children, depth + 1) +
+          '</li>'
+        );
+      })
+      .join("") +
+    "</ul>"
+  );
+}
+
+function renderCraftingEstimatorPanels() {
+  const treeEl = document.getElementById("craftTreeContainer");
+  const rawEl = document.getElementById("craftRawMaterials");
+  const wagonEl = document.getElementById("wagonCraftSummary");
+
+  if (treeEl || rawEl) {
+    const singleEst = state.selectedGood ? getPackCraftingEstimate(state.selectedGood) : null;
+    if (treeEl) {
+      if (!singleEst || !singleEst.trees || !singleEst.trees.length) {
+        treeEl.innerHTML = '<div class="empty-msg">No crafting recipe data for this pack.</div>';
+      } else {
+        treeEl.innerHTML =
+          '<div class="craft-summary-line">Est. Craft + Packing Gold: <strong>' +
+          singleEst.totalGoldCost.toLocaleString() +
+          ' G</strong></div>' +
+          buildCraftTreeNodesHtml(singleEst.trees, 0);
+      }
+    }
+    if (rawEl) {
+      if (!singleEst || !singleEst.rawMaterials || !singleEst.rawMaterials.length) {
+        rawEl.innerHTML = '<span style="color:var(--text-muted);">—</span>';
+      } else {
+        rawEl.innerHTML = singleEst.rawMaterials
+          .map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>")
+          .join("");
+      }
+    }
+  }
+
+  if (wagonEl) {
+    const wagonEst = getWagonCraftingEstimate(state.runSlots);
+    if (!wagonEst || wagonEst.packCount === 0) {
+      wagonEl.innerHTML = '<span style="color:var(--text-muted);">—</span>';
+    } else {
+      const rawText = wagonEst.rawMaterials.length
+        ? wagonEst.rawMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
+        : "—";
+      wagonEl.innerHTML =
+        '<div><strong>Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + '):</strong> ' +
+        wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
+        '<div style="margin-top:4px;"><strong>Raw Materials:</strong> ' + escapeHtml(rawText) + '</div>';
+    }
+  }
+}
+
 
 function getPackImageSrc(packName) {
   if (!packName) return "";
