@@ -19,8 +19,8 @@ function normalizeGoodKey(name) {
 
 const REGION_TO_OUTPOST = {
   "seaglass harbor": "Seaglass Harbor Trading Post",
-  "watcher's trading post": "Watcher's Harbor Trading Post",
-  "watcher's harbor": "Watcher's Harbor Trading Post",
+  "watcher's trading post": "Watcher's Trading Post",
+  "Watcher's": "Watcher's Trading Post",
   "jubilant village": "Jubilant Village Trading Post",
   "waterdrift trading post": "Waterdrift Trading Post",
   "stargazer village": "Stargazer Trading Post",
@@ -1021,7 +1021,7 @@ const MAP_HEIGHT = 4712;
 // Tant qu'un Trading Post n'a pas de coordonnées renseignées ici, son icône n'est pas affichée.
 const OUTPOST_COORDS = {
   "Seaglass Harbor Trading Post":     { x: 4965, y: 3672 },
-  "Watcher's Harbor Trading Post":     { x: 4330, y: 3331 },
+  "Watcher's Trading Post":     { x: 4330, y: 3331 },
   "Jubilant Village Trading Post":     { x: 2221, y: 3278 },
   "Waterdrift Trading Post":           { x: 2620, y: 1787 },
   "Stargazer Trading Post":            { x: 4420, y: 1981 },
@@ -1031,8 +1031,47 @@ const OUTPOST_COORDS = {
 // Optionnel : association explicite "Départ -> Arrivée" vers le fichier image transparent du trajet.
 // Si non défini ici, le script cherchera automatiquement dans imgs/routes/<DepartSlug>_to_<ArriveeSlug>.webp (puis .png)
 const ROUTE_OVERLAYS = {
-  // Exemple :
-  // "Seaglass Harbor Trading Post->Watcher's Harbor Trading Post": "imgs/routes/seaglass_to_watchers.webp"
+  // From Seaglass Harbor Trading Post
+  "Seaglass Harbor Trading Post->Watcher's Trading Post": "imgs/routes/seaglass_harbor_to_watchers_harbor.webp",
+  "Seaglass Harbor Trading Post->Jubilant Village Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.webp",
+  "Seaglass Harbor Trading Post->Waterdrift Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.webp",
+  "Seaglass Harbor Trading Post->Stargazer Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.webp",
+  "Seaglass Harbor Trading Post->Shadowpath Temple Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.webp",
+
+  // From Watcher's Trading Post
+  "Watcher's Trading Post->Seaglass Harbor Trading Post": "imgs/routes/watchers_harbor_to_seaglass_harbor.webp",
+  "Watcher's Trading Post->Jubilant Village Trading Post": "imgs/routes/watchers_harbor_to_jubilant_village.webp",
+  "Watcher's Trading Post->Waterdrift Trading Post": "imgs/routes/watchers_harbor_to_waterdrift.webp",
+  "Watcher's Trading Post->Stargazer Trading Post": "imgs/routes/watchers_harbor_to_stargazer.webp",
+  "Watcher's Trading Post->Shadowpath Temple Trading Post": "imgs/routes/watchers_harbor_to_shadowpath_temple.webp",
+
+  // From Jubilant Village Trading Post
+  "Jubilant Village Trading Post->Seaglass Harbor Trading Post": "imgs/routes/jubilant_village_to_seaglass_harbor.webp",
+  "Jubilant Village Trading Post->Watcher's Trading Post": "imgs/routes/jubilant_village_to_watchers_harbor.webp",
+  "Jubilant Village Trading Post->Waterdrift Trading Post": "imgs/routes/jubilant_village_to_waterdrift.webp",
+  "Jubilant Village Trading Post->Stargazer Trading Post": "imgs/routes/jubilant_village_to_stargazer.webp",
+  "Jubilant Village Trading Post->Shadowpath Temple Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.webp",
+
+  // From Waterdrift Trading Post
+  "Waterdrift Trading Post->Seaglass Harbor Trading Post": "imgs/routes/waterdrift_to_seaglass_harbor.webp",
+  "Waterdrift Trading Post->Watcher's Trading Post": "imgs/routes/waterdrift_to_watchers_harbor.webp",
+  "Waterdrift Trading Post->Jubilant Village Trading Post": "imgs/routes/waterdrift_to_jubilant_village.webp",
+  "Waterdrift Trading Post->Stargazer Trading Post": "imgs/routes/waterdrift_to_stargazer.webp",
+  "Waterdrift Trading Post->Shadowpath Temple Trading Post": "imgs/routes/waterdrift_to_shadowpath_temple.webp",
+
+  // From Stargazer Trading Post
+  "Stargazer Trading Post->Seaglass Harbor Trading Post": "imgs/routes/stargazer_to_seaglass_harbor.webp",
+  "Stargazer Trading Post->Watcher's Trading Post": "imgs/routes/stargazer_to_watchers_harbor.webp",
+  "Stargazer Trading Post->Jubilant Village Trading Post": "imgs/routes/stargazer_to_jubilant_village.webp",
+  "Stargazer Trading Post->Waterdrift Trading Post": "imgs/routes/stargazer_to_waterdrift.webp",
+  "Stargazer Trading Post->Shadowpath Temple Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.webp",
+
+  // From Shadowpath Temple Trading Post
+  "Shadowpath Temple Trading Post->Seaglass Harbor Trading Post": "imgs/routes/shadowpath_temple_to_seaglass_harbor.webp",
+  "Shadowpath Temple Trading Post->Watcher's Trading Post": "imgs/routes/shadowpath_temple_to_watchers_harbor.webp",
+  "Shadowpath Temple Trading Post->Jubilant Village Trading Post": "imgs/routes/shadowpath_temple_to_jubilant_village.webp",
+  "Shadowpath Temple Trading Post->Waterdrift Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.webp",
+  "Shadowpath Temple Trading Post->Stargazer Trading Post": "imgs/routes/shadowpath_temple_to_stargazer.webp"
 };
 
 function slugifyOutpost(name) {
