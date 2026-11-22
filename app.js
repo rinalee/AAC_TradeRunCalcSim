@@ -861,14 +861,14 @@ function getPackImageSrc(packName) {
   if (!packName) return "";
   const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
   const noSpaces = canonical.replace(/\s+/g, "");
-  return "imgs/" + encodeURIComponent(noSpaces) + ".webp";
+  return "imgs/tradepacks/" + encodeURIComponent(noSpaces) + ".webp";
 }
 
 function getPackImageFallbackSrc(packName) {
   if (!packName) return "";
   const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
   const alphanumericOnly = canonical.replace(/[^a-zA-Z0-9]/g, "");
-  return "imgs/" + encodeURIComponent(alphanumericOnly) + ".webp";
+  return "imgs/tradepacks/" + encodeURIComponent(alphanumericOnly) + ".webp";
 }
 
 function handlePackImgError(imgEl, packName) {
@@ -886,10 +886,10 @@ function handlePackImgError(imgEl, packName) {
 
 function escapeHtml(str) {
   return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, """);
 }
 
 originSelect.addEventListener("change", () => {
@@ -953,28 +953,7 @@ document.addEventListener("keydown", e => {
     return;
   }
   if (e.key === "r" || e.key === "R") {
-    
-function syncMapViewportSize() {
-  if (!mapViewport || !mapWidget) return;
-  if (!mapWidget.classList.contains("expanded")) {
-    const w = mapViewport.clientWidth;
-    if (w > 0) {
-      mapViewport.style.height = w + "px";
-    }
-  }
-  if (!mapState.initialized) {
-    fitMapToView(null);
-  } else {
-    applyMapTransform();
-  }
-}
-
-if (typeof ResizeObserver !== "undefined" && mapViewport) {
-  new ResizeObserver(() => syncMapViewportSize()).observe(mapViewport);
-}
-syncMapViewportSize();
-
-loadSheetData();
+    loadSheetData();
   } else if (e.key === "x" || e.key === "X") {
     document.getElementById("swapBtn").click();
   } else if (e.key === "/") {
@@ -1014,64 +993,60 @@ document.getElementById("runClearBtn").addEventListener("click", () => {
 const MAP_WIDTH = 6232;
 const MAP_HEIGHT = 4712;
 
-// Coordonnées (x, y) en pixels sur worldmap.webp (6232 x 4712).
-// Survole la carte ou clique sur le fond pour copier les coordonnées x, y exactes !
-// Renseigne ici les coordonnées (x, y) en pixels sur worldmap.webp (6232 x 4712).
-// Survole la carte pour lire x, y et clique sur le fond pour copier { x: ..., y: ... } !
-// Tant qu'un Trading Post n'a pas de coordonnées renseignées ici, son icône n'est pas affichée.
+// Outpost (x, y) pixel coordinates on worldmap.webp (6232 x 4712).
+// Hover the map to read (x, y) or click the map background to copy { x: ..., y: ... }.
 const OUTPOST_COORDS = {
   "Seaglass Harbor Trading Post":     { x: 4965, y: 3672 },
-  "Watcher's Trading Post":     { x: 4330, y: 3331 },
-  "Jubilant Village Trading Post":     { x: 2221, y: 3278 },
-  "Waterdrift Trading Post":           { x: 2620, y: 1787 },
-  "Stargazer Trading Post":            { x: 4420, y: 1981 },
-  "Shadowpath Temple Trading Post":    { x: 4422, y: 940 }
+  "Watcher's Trading Post":           { x: 4330, y: 3331 },
+  "Jubilant Village Trading Post":    { x: 2221, y: 3278 },
+  "Waterdrift Trading Post":          { x: 2620, y: 1787 },
+  "Stargazer Trading Post":           { x: 4420, y: 1981 },
+  "Shadowpath Temple Trading Post":   { x: 4422, y: 940 }
 };
 
-// Optionnel : association explicite "Départ -> Arrivée" vers le fichier image transparent du trajet.
-// Si non défini ici, le script cherchera automatiquement dans imgs/routes/<DepartSlug>_to_<ArriveeSlug>.webp (puis .png)
+// Explicit "Departure -> Arrival" mapping to transparent SVG route overlays.
 const ROUTE_OVERLAYS = {
   // From Seaglass Harbor Trading Post
-  "Seaglass Harbor Trading Post->Watcher's Trading Post": "imgs/routes/seaglass_harbor_to_watchers.webp",
-  "Seaglass Harbor Trading Post->Jubilant Village Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.webp",
-  "Seaglass Harbor Trading Post->Waterdrift Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.webp",
-  "Seaglass Harbor Trading Post->Stargazer Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.webp",
-  "Seaglass Harbor Trading Post->Shadowpath Temple Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.webp",
+  "Seaglass Harbor Trading Post->Watcher's Trading Post": "imgs/routes/seaglass_harbor_to_watchers.svg",
+  "Seaglass Harbor Trading Post->Jubilant Village Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.svg",
+  "Seaglass Harbor Trading Post->Waterdrift Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.svg",
+  "Seaglass Harbor Trading Post->Stargazer Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.svg",
+  "Seaglass Harbor Trading Post->Shadowpath Temple Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.svg",
 
   // From Watcher's Trading Post
-  "Watcher's Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_watchers.webp", // réutilise l'inverse
-  "Watcher's Trading Post->Jubilant Village Trading Post": "imgs/routes/watchers_to_jubilant_village.webp",
-  "Watcher's Trading Post->Waterdrift Trading Post": "imgs/routes/watchers_to_waterdrift.webp",
-  "Watcher's Trading Post->Stargazer Trading Post": "imgs/routes/watchers_to_stargazer.webp",
-  "Watcher's Trading Post->Shadowpath Temple Trading Post": "imgs/routes/watchers_to_shadowpath_temple.webp",
+  "Watcher's Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_watchers.svg",
+  "Watcher's Trading Post->Jubilant Village Trading Post": "imgs/routes/watchers_to_jubilant_village.svg",
+  "Watcher's Trading Post->Waterdrift Trading Post": "imgs/routes/watchers_to_waterdrift.svg",
+  "Watcher's Trading Post->Stargazer Trading Post": "imgs/routes/watchers_to_stargazer.svg",
+  "Watcher's Trading Post->Shadowpath Temple Trading Post": "imgs/routes/watchers_to_shadowpath_temple.svg",
 
   // From Jubilant Village Trading Post
-  "Jubilant Village Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.webp", // réutilise l'inverse
-  "Jubilant Village Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_jubilant_village.webp", // réutilise l'inverse
-  "Jubilant Village Trading Post->Waterdrift Trading Post": "imgs/routes/jubilant_village_to_waterdrift.webp",
-  "Jubilant Village Trading Post->Stargazer Trading Post": "imgs/routes/jubilant_village_to_stargazer.webp",
-  "Jubilant Village Trading Post->Shadowpath Temple Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.webp",
+  "Jubilant Village Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_jubilant_village.svg",
+  "Jubilant Village Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_jubilant_village.svg",
+  "Jubilant Village Trading Post->Waterdrift Trading Post": "imgs/routes/jubilant_village_to_waterdrift.svg",
+  "Jubilant Village Trading Post->Stargazer Trading Post": "imgs/routes/jubilant_village_to_stargazer.svg",
+  "Jubilant Village Trading Post->Shadowpath Temple Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.svg",
 
   // From Waterdrift Trading Post
-  "Waterdrift Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.webp", // réutilise l'inverse
-  "Waterdrift Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_waterdrift.webp", // réutilise l'inverse
-  "Waterdrift Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_waterdrift.webp", // réutilise l'inverse
-  "Waterdrift Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_waterdrift.webp", // réutilise l'inverse
-  "Waterdrift Trading Post->Shadowpath Temple Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.webp", // réutilise l'inverse
+  "Waterdrift Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_waterdrift.svg",
+  "Waterdrift Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_waterdrift.svg",
+  "Waterdrift Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_waterdrift.svg",
+  "Waterdrift Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_waterdrift.svg",
+  "Waterdrift Trading Post->Shadowpath Temple Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.svg",
 
   // From Stargazer Trading Post
-  "Stargazer Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.webp", // réutilise l'inverse
-  "Stargazer Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_stargazer.webp", // réutilise l'inverse
-  "Stargazer Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_stargazer.webp", // réutilise l'inverse
-  "Stargazer Trading Post->Waterdrift Trading Post": "imgs/routes/stargazer_to_waterdrift.webp",
-  "Stargazer Trading Post->Shadowpath Temple Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.webp",
+  "Stargazer Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_stargazer.svg",
+  "Stargazer Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_stargazer.svg",
+  "Stargazer Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_stargazer.svg",
+  "Stargazer Trading Post->Waterdrift Trading Post": "imgs/routes/stargazer_to_waterdrift.svg",
+  "Stargazer Trading Post->Shadowpath Temple Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.svg",
 
   // From Shadowpath Temple Trading Post
-  "Shadowpath Temple Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.webp", // réutilise l'inverse
-  "Shadowpath Temple Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_shadowpath_temple.webp", // réutilise l'inverse
-  "Shadowpath Temple Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.webp", // réutilise l'inverse
-  "Shadowpath Temple Trading Post->Waterdrift Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.webp",
-  "Shadowpath Temple Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.webp" // réutilise l'inverse
+  "Shadowpath Temple Trading Post->Seaglass Harbor Trading Post": "imgs/routes/seaglass_harbor_to_shadowpath_temple.svg",
+  "Shadowpath Temple Trading Post->Watcher's Trading Post": "imgs/routes/watchers_to_shadowpath_temple.svg",
+  "Shadowpath Temple Trading Post->Jubilant Village Trading Post": "imgs/routes/jubilant_village_to_shadowpath_temple.svg",
+  "Shadowpath Temple Trading Post->Waterdrift Trading Post": "imgs/routes/shadowpath_temple_to_waterdrift.svg",
+  "Shadowpath Temple Trading Post->Stargazer Trading Post": "imgs/routes/stargazer_to_shadowpath_temple.svg"
 };
 
 function slugifyOutpost(name) {
@@ -1099,10 +1074,10 @@ function getRouteOverlayCandidates(originName, destName) {
   const oSlug = slugifyOutpost(originName);
   const dSlug = slugifyOutpost(destName);
   return [
+    "imgs/routes/" + oSlug + "_to_" + dSlug + ".svg",
+    "imgs/routes/" + dSlug + "_to_" + oSlug + ".svg",
     "imgs/routes/" + oSlug + "_to_" + dSlug + ".webp",
-    "imgs/routes/" + oSlug + "_to_" + dSlug + ".png",
-    "imgs/routes/" + dSlug + "_to_" + oSlug + ".webp",
-    "imgs/routes/" + dSlug + "_to_" + oSlug + ".png"
+    "imgs/routes/" + dSlug + "_to_" + oSlug + ".webp"
   ];
 }
 
@@ -1398,6 +1373,26 @@ document.getElementById("mapExpandBtn")?.addEventListener("click", () => {
   mapWidget.classList.toggle("expanded");
   setTimeout(() => applyMapTransform(), 210);
 });
+
+function syncMapViewportSize() {
+  if (!mapViewport || !mapWidget) return;
+  if (!mapWidget.classList.contains("expanded")) {
+    const w = mapViewport.clientWidth;
+    if (w > 0) {
+      mapViewport.style.height = w + "px";
+    }
+  }
+  if (!mapState.initialized) {
+    fitMapToView(null);
+  } else {
+    applyMapTransform();
+  }
+}
+
+if (typeof ResizeObserver !== "undefined" && mapViewport) {
+  new ResizeObserver(() => syncMapViewportSize()).observe(mapViewport);
+}
+syncMapViewportSize();
 
 window.addEventListener("resize", () => applyMapTransform());
 
