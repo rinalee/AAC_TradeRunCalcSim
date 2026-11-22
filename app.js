@@ -869,6 +869,7 @@ function addPackToRun(packName, count) {
   const n = Math.min(count || 1, room);
   for (let i = 0; i < n; i++) state.runSlots.push(packName);
   renderRunSimulation();
+  renderCraftingEstimatorPanels();
 }
 
 function renderAll() {
@@ -1088,21 +1089,6 @@ function renderCraftingEstimatorPanels() {
   }
 }
 
-  if (wagonEl) {
-    const wagonEst = getWagonCraftingEstimate(state.runSlots);
-    if (!wagonEst || wagonEst.packCount === 0) {
-      wagonEl.innerHTML = '<span style="color:var(--text-muted);">—</span>';
-    } else {
-      const rawText = wagonEst.rawMaterials.length
-        ? wagonEst.rawMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
-        : "—";
-      wagonEl.innerHTML =
-        '<div><strong>Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + '):</strong> ' +
-        wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
-        '<div style="margin-top:4px;"><strong>Raw Materials:</strong> ' + escapeHtml(rawText) + '</div>';
-    }
-  }
-
 function getPackImageSrc(packName) {
   if (!packName) return "";
   const canonical = packName.replace(/Trade Box$/i, "Trade Goods").trim();
@@ -1222,6 +1208,7 @@ document.getElementById("runFillBtn").addEventListener("click", () => {
     // replace all with selected
     state.runSlots = Array(RUN_CAPACITY).fill(state.selectedGood);
     renderRunSimulation();
+    renderCraftingEstimatorPanels();
     return;
   }
   addPackToRun(state.selectedGood, room);
@@ -1230,6 +1217,7 @@ document.getElementById("runFillBtn").addEventListener("click", () => {
 document.getElementById("runClearBtn").addEventListener("click", () => {
   state.runSlots = [];
   renderRunSimulation();
+  renderCraftingEstimatorPanels();
 });
 
 
