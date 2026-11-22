@@ -983,6 +983,9 @@ select:focus, input[type="text"]:focus {
 .map-route-overlay {
   z-index: 2;
   opacity: 0.95;
+  /* Turns black SVG strokes/fills into crimson red with a subtle contrast halo */
+  filter: brightness(0) saturate(100%) invert(24%) sepia(93%) saturate(4791%) hue-rotate(353deg) brightness(95%) contrast(112%)
+    drop-shadow(0 0 6px rgba(18, 17, 15, 0.9));
 }
 
 .map-markers-layer {
