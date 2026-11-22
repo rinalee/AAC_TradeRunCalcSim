@@ -1132,3 +1132,24 @@ select:focus, input[type="text"]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.map-route-inline svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6232px;
+  height: 4712px;
+  display: block;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.95));
+}
+
+.map-route-inline path,
+.map-route-inline polyline,
+.map-route-inline polygon,
+.map-route-inline line,
+.map-route-inline circle,
+.map-route-inline ellipse,
+.map-route-inline rect {
+  stroke: #ff2a2a !important;
+  vector-effect: non-scaling-stroke !important;
+}
