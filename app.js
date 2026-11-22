@@ -905,18 +905,31 @@ function getWagonCraftingEstimate(packNames) {
   return window.CraftingEstimator.estimateWagonCargo(packEstimates, RUN_CAPACITY);
 }
 
+function packHasCraftOrMaterials(packName) {
+  if (!packName) return false;
+  const goodObj = state.allGoods.find((g) => g.name === packName) || { name: packName, key: normalizeGoodKey(packName) };
+  const lkp = getLookupEntry(goodObj, state.lookupMap);
+  const est = getPackCraftingEstimate(packName);
+
+  const hasLookupMats = Boolean(lkp && Array.isArray(lkp.materials) && lkp.materials.length > 0);
+  const hasCraftSteps = Boolean(est && est.trees && est.trees.some((t) => !t.isRaw || (t.children && t.children.length > 0)));
+  const hasRawMats = Boolean(est && Array.isArray(est.rawMaterials) && est.rawMaterials.length > 0);
+
+  return hasLookupMats || hasCraftSteps || hasRawMats;
+}
+
 function buildCraftTreeNodesHtml(nodes, depth = 0) {
   if (!Array.isArray(nodes) || nodes.length === 0) return "";
   return (
-    '<ul class="craft-tree-list" style="margin-left:' + (depth * 14) + 'px;">' +
+    '<ul class="craft-tree-list" style="list-style:none;padding-left:0;margin:4px 0 4px ' + (depth * 14) + 'px;">' +
     nodes
       .map((node) => {
         const meta = node.craftRuns > 0
-          ? ' <span class="craft-node-meta">(' + node.craftRuns + ' craft' + (node.craftRuns > 1 ? "s" : "") + ' · ' + node.craftGoldCost.toLocaleString() + 'G)</span>'
-          : ' <span class="craft-node-meta">(Base)</span>';
+          ? ' <span class="craft-node-meta" style="opacity:0.78;font-size:0.82em;">(' + node.craftRuns + ' craft' + (node.craftRuns > 1 ? "s" : "") + ' · ' + node.craftGoldCost.toLocaleString() + 'G)</span>'
+          : ' <span class="craft-node-meta" style="opacity:0.65;font-size:0.82em;">(Raw/Base)</span>';
         return (
-          '<li class="craft-tree-node">' +
-            '<span class="craft-node-label">' + escapeHtml(node.neededQty) + '× ' + escapeHtml(node.itemName) + '</span>' +
+          '<li class="craft-tree-node" style="margin:3px 0;">' +
+            '<span class="craft-node-label">' + escapeHtml(node.neededQty) + '× <strong>' + escapeHtml(node.itemName) + '</strong></span>' +
             meta +
             buildCraftTreeNodesHtml(node.children, depth + 1) +
           '</li>'
@@ -927,34 +940,153 @@ function buildCraftTreeNodesHtml(nodes, depth = 0) {
   );
 }
 
-function renderCraftingEstimatorPanels() {
-  const treeEl = document.getElementById("craftTreeContainer");
-  const rawEl = document.getElementById("craftRawMaterials");
-  const wagonEl = document.getElementById("wagonCraftSummary");
+function ensureFloatingCraftModal() {
+  let modal = document.getElementById("craftFloatingModal");
+  if (modal) return modal;
 
-  if (treeEl || rawEl) {
-    const singleEst = state.selectedGood ? getPackCraftingEstimate(state.selectedGood) : null;
-    if (treeEl) {
-      if (!singleEst || !singleEst.trees || !singleEst.trees.length) {
-        treeEl.innerHTML = '<div class="empty-msg">No crafting recipe data for this pack.</div>';
-      } else {
-        treeEl.innerHTML =
-          '<div class="craft-summary-line">Est. Craft + Packing Gold: <strong>' +
-          singleEst.totalGoldCost.toLocaleString() +
-          ' G</strong></div>' +
-          buildCraftTreeNodesHtml(singleEst.trees, 0);
-      }
+  modal = document.createElement("div");
+  modal.id = "craftFloatingModal";
+  modal.style.cssText =
+    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;";
+
+  modal.innerHTML =
+    '<div id="craftFloatingBox" style="width:100%;max-width:560px;max-height:84vh;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:#181715;color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:10px;margin-bottom:12px;">' +
+        '<div>' +
+          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7;">Pack Crafting Breakdown</div>' +
+          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;">—</div>' +
+        '</div>' +
+        '<button type="button" id="craftModalCloseBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.9rem;">✕</button>' +
+      '</div>' +
+      '<div id="craftModalBody" style="font-size:0.88rem;"></div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => {
+    modal.style.display = "none";
+  };
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+  modal.querySelector("#craftModalCloseBtn")?.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal.style.display === "flex") {
+      closeModal();
     }
-    if (rawEl) {
-      if (!singleEst || !singleEst.rawMaterials || !singleEst.rawMaterials.length) {
-        rawEl.innerHTML = '<span style="color:var(--text-muted);">—</span>';
-      } else {
-        rawEl.innerHTML = singleEst.rawMaterials
-          .map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>")
-          .join("");
+  });
+
+  return modal;
+}
+
+function openFloatingCraftModal(packName) {
+  const modal = ensureFloatingCraftModal();
+  const titleEl = modal.querySelector("#craftModalTitle");
+  const bodyEl = modal.querySelector("#craftModalBody");
+  const est = getPackCraftingEstimate(packName);
+
+  if (titleEl) titleEl.textContent = packName || "Pack Details";
+  if (!bodyEl) return;
+
+  if (!est) {
+    bodyEl.innerHTML = '<div class="empty-msg">No crafting breakdown available for this pack.</div>';
+  } else {
+    const rawHtml = est.rawMaterials.length
+      ? est.rawMaterials.map((m) => '<span class="mat-chip" style="margin:2px;">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      : '<span style="opacity:0.65;">—</span>';
+
+    const midHtml = est.intermediateMaterials.length
+      ? est.intermediateMaterials.map((m) => '<span class="mat-chip" style="margin:2px;">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      : '<span style="opacity:0.65;">—</span>';
+
+    bodyEl.innerHTML =
+      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:7px;background:rgba(255,255,255,0.04);margin-bottom:12px;">' +
+        '<div>Total Gold: <strong>' + est.totalGoldCost.toLocaleString() + ' G</strong></div>' +
+        '<div>Craft Gold: <strong>' + est.craftingGoldTotal.toLocaleString() + ' G</strong></div>' +
+        '<div>Pack / Cost: <strong>' + est.packingGoldCost.toLocaleString() + ' G</strong></div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
+      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:4px;">Intermediate Sub-Components</div><div>' + midHtml + '</div></div>' +
+      '<div><div style="font-weight:600;margin-bottom:4px;">Total Raw Base Materials (1 Pack)</div><div>' + rawHtml + '</div></div>';
+  }
+
+  modal.style.display = "flex";
+}
+
+function ensureShowDetailsButton() {
+  const host =
+    document.getElementById("matsRow")?.parentElement ||
+    document.getElementById("costSection")?.parentElement ||
+    document.getElementById("detailRouteBadge")?.parentElement;
+
+  if (!host) return null;
+
+  let btn = document.getElementById("showCraftDetailsBtn");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = "showCraftDetailsBtn";
+    btn.type = "button";
+    btn.textContent = "Show details";
+    btn.style.cssText =
+      "display:none;margin-top:10px;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;font-size:0.84rem;font-weight:600;cursor:pointer;";
+    btn.addEventListener("click", () => {
+      if (state.selectedGood) {
+        openFloatingCraftModal(state.selectedGood);
       }
+    });
+    host.appendChild(btn);
+  }
+  return btn;
+}
+
+function ensureWagonCraftContainer() {
+  let wagonEl = document.getElementById("wagonCraftSummary");
+  if (wagonEl) return wagonEl;
+
+  const wagonHost =
+    document.getElementById("runItems")?.closest(".run-summary") ||
+    document.getElementById("runItems")?.closest(".panel") ||
+    document.getElementById("runItems")?.parentElement ||
+    document.getElementById("runSlots")?.parentElement;
+
+  if (wagonHost) {
+    wagonEl = document.createElement("div");
+    wagonEl.id = "wagonCraftSummary";
+    wagonEl.style.cssText =
+      "margin-top:10px;padding:9px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);font-size:0.85rem;";
+    wagonHost.appendChild(wagonEl);
+  }
+  return wagonEl;
+}
+
+function renderCraftingEstimatorPanels() {
+  const detailsBtn = ensureShowDetailsButton();
+  if (detailsBtn) {
+    const canShow = Boolean(state.selectedGood) && packHasCraftOrMaterials(state.selectedGood);
+    detailsBtn.style.display = canShow ? "inline-flex" : "none";
+  }
+
+  const wagonEl = ensureWagonCraftContainer();
+  if (wagonEl) {
+    const wagonEst = getWagonCraftingEstimate(state.runSlots);
+    if (!wagonEst || wagonEst.packCount === 0) {
+      wagonEl.innerHTML = '<span style="opacity:0.7;">Wagon Craft & Materials (0/' + RUN_CAPACITY + '): —</span>';
+    } else {
+      const rawText = wagonEst.rawMaterials.length
+        ? wagonEst.rawMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
+        : "—";
+      const midText = wagonEst.intermediateMaterials.length
+        ? wagonEst.intermediateMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
+        : "—";
+      wagonEl.innerHTML =
+        '<div><strong>Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + '):</strong> ' +
+        wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
+        '<div style="margin-top:4px;"><strong>Intermediate Sub-Components:</strong> ' + escapeHtml(midText) + '</div>' +
+        '<div style="margin-top:4px;"><strong>Total Raw Materials:</strong> ' + escapeHtml(rawText) + '</div>';
     }
   }
+}
 
   if (wagonEl) {
     const wagonEst = getWagonCraftingEstimate(state.runSlots);
