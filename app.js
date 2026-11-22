@@ -1,3 +1,45 @@
+// URL CSV publiée de l'onglet "Craft/Recipes" du classeur Trading Post Info
+const CRAFT_RECIPES_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?gid=1430652523&single=true&output=csv";
+
+let craftingData = {
+  lookupMap: new Map(),
+  recipesMap: new Map()
+};
+
+async function initCraftingEstimator() {
+  if (!window.CraftingEstimator || !CRAFT_RECIPES_CSV_URL) return;
+  craftingData = await window.CraftingEstimator.loadCraftingData({
+    lookupCsvUrl: typeof LOOKUP_CSV_URL !== "undefined" ? LOOKUP_CSV_URL : "",
+    craftRecipesCsvUrl: CRAFT_RECIPES_CSV_URL
+  });
+}
+
+function getSinglePackCraftingEstimate(packName) {
+  if (!window.CraftingEstimator || !packName) return null;
+  return window.CraftingEstimator.estimatePackFromLookup(
+    packName,
+    craftingData.lookupMap,
+    craftingData.recipesMap
+  );
+}
+
+function updateWagonCraftingEstimate(wagonPackNames) {
+  if (!window.CraftingEstimator) return null;
+
+  const packEstimates = (wagonPackNames || [])
+    .slice(0, 7)
+    .map((packName) =>
+      window.CraftingEstimator.estimatePackFromLookup(
+        packName,
+        craftingData.lookupMap,
+        craftingData.recipesMap
+      )
+    )
+    .filter(Boolean);
+
+  return window.CraftingEstimator.estimateWagonCargo(packEstimates, 7);
+}
+
 const SHEET_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vThZSxVuXYBFDKYryw2Jc3oUtAu-qj0U_5qlMWWlN8rYIw2XBmuVMF-FMP-Nxwjb1k2T2Y4_QQVO3w-/pub?output=csv";
 
