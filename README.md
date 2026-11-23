@@ -40,8 +40,8 @@ An interactive web-based trade run calculator, route visualizer, and profit esti
 
 ## Roadmap & Planned Features
 
-- **Job Mastery Levels (`Novice` / `Journeyman` / `Master`)**:
-  - Add mastery level selection per job (such as `Cooking`, `Alchemy`, and other crafting professions) inside the calculator.
+- **Job Proficiency Levels (`Novice` / `Apprentice`/ `Journeyman` /`Expert` / `Master`)**:
+  - Add profeciency level selection per job (such as `Cooking`, `Wildcraft`, and other crafting professions) inside the calculator.
   - Apply reduced ingredient consumption and increased yield/output for higher ranks on **Tier 1 (`Standard`)** and **Tier 2 (`Fine`)** materials once the higher-tier recipe/ingredient tables are updated.
 
 ---
