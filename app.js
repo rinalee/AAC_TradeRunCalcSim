@@ -1653,3 +1653,161 @@ syncMapViewportSize();
 window.addEventListener("resize", () => applyMapTransform());
 
 loadSheetData();
+
+const rewardSelect = document.getElementById("rewardSelect");
+const clearRewardSelectBtn = document.getElementById("clearRewardSelectBtn");
+const reverseSearchResults = document.getElementById("reverseSearchResults");
+const reverseResultCount = document.getElementById("reverseResultCount");
+
+const GOLD_REWARD_OPTION_VALUE = "__GOLDS__";
+
+function populateRewardDropdown() {
+  if (!rewardSelect) return;
+  const prevVal = state.selectedReward || rewardSelect.value || "";
+  let hasAnyGold = false;
+  const uniqueItems = new Map();
+
+  for (const op of state.outposts) {
+    for (const s of op.sales) {
+      if (!s.reward) continue;
+      if (s.reward.type === "gold") {
+        hasAnyGold = true;
+        continue;
+      }
+      const raw = (s.reward.raw || "").trim();
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      if (!uniqueItems.has(key)) {
+        uniqueItems.set(key, raw);
+      }
+    }
+  }
+
+  const sortedItems = Array.from(uniqueItems.values()).sort((a, b) => a.localeCompare(b));
+  const optionsHtml = [];
+
+  if (hasAnyGold) {
+    optionsHtml.push('<option value="' + GOLD_REWARD_OPTION_VALUE + '">Golds</option>');
+  }
+
+  for (const val of sortedItems) {
+    optionsHtml.push('<option value="' + escapeHtml(val) + '">' + escapeHtml(val) + "</option>");
+  }
+
+  rewardSelect.innerHTML =
+    '<option value="">— Select a reward —</option>' + optionsHtml.join("");
+
+  if (prevVal === GOLD_REWARD_OPTION_VALUE && hasAnyGold) {
+    rewardSelect.value = GOLD_REWARD_OPTION_VALUE;
+    state.selectedReward = GOLD_REWARD_OPTION_VALUE;
+  } else if (prevVal && sortedItems.some((v) => v.toLowerCase() === prevVal.toLowerCase())) {
+    const exact = sortedItems.find((v) => v.toLowerCase() === prevVal.toLowerCase()) || "";
+    rewardSelect.value = exact;
+    state.selectedReward = exact;
+  } else {
+    rewardSelect.value = "";
+    state.selectedReward = "";
+  }
+}
+
+function renderReverseProductSearch() {
+  if (!rewardSelect || !reverseSearchResults || !reverseResultCount) return;
+
+  populateRewardDropdown();
+
+  const selected = (state.selectedReward || rewardSelect.value || "").trim();
+  if (!selected) {
+    reverseResultCount.textContent = "0 matches";
+    reverseSearchResults.className = "reverse-results-empty";
+    reverseSearchResults.textContent =
+      "Select a reward to see all packs and destinations that yield it.";
+    return;
+  }
+
+  const isGoldFilter = selected === GOLD_REWARD_OPTION_VALUE;
+  const targetKey = selected.toLowerCase();
+  const matches = [];
+
+  for (const op of state.outposts) {
+    for (const s of op.sales) {
+      if (!s.reward) continue;
+      const rawReward = (s.reward.raw || "").trim();
+      if (!rawReward) continue;
+
+      const matched = isGoldFilter
+        ? s.reward.type === "gold"
+        : s.reward.type !== "gold" && rawReward.toLowerCase() === targetKey;
+
+      if (matched) {
+        const gObj = state.allGoods.find((g) => g.key === s.key || g.name === s.good);
+        const originOutpost =
+          (gObj && gObj.originOutpost) ||
+          state.dispatchByGoodKey[s.key] ||
+          resolveOutpostFromRegion(s.region);
+
+        matches.push({
+          packName: s.good,
+          rewardLabel: formatRewardLabel(s.reward),
+          isGold: s.reward.type === "gold",
+          region: s.region || "—",
+          originOutpost,
+          destOutpost: op.name
+        });
+      }
+    }
+  }
+
+  reverseResultCount.textContent =
+    matches.length + (matches.length === 1 ? " match" : " matches");
+
+  if (!matches.length) {
+    reverseSearchResults.className = "reverse-results-empty";
+    reverseSearchResults.textContent =
+      'No packs or destinations found for "' + (isGoldFilter ? "Golds" : selected) + '".';
+    return;
+  }
+
+  reverseSearchResults.className = "reverse-results-grid";
+  reverseSearchResults.innerHTML = matches
+    .map(
+      (m, idx) =>
+        '<button type="button" class="reverse-card" data-idx="' + idx + '">' +
+          '<div class="reverse-card-top">' +
+            '<span class="reverse-pack-name">' + escapeHtml(m.packName) + '</span>' +
+            '<span class="good-reward-tag ' + (m.isGold ? "gold" : "") + '">' +
+              escapeHtml(m.rewardLabel) +
+            '</span>' +
+          '</div>' +
+          '<div class="reverse-card-meta">' +
+            '<span>Destination: <strong>' + escapeHtml(m.destOutpost) + '</strong></span>' +
+            '<span>Origin: ' + escapeHtml(m.originOutpost) + '</span>' +
+          '</div>' +
+        '</button>'
+    )
+    .join("");
+
+  reverseSearchResults.querySelectorAll(".reverse-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const m = matches[parseInt(btn.dataset.idx, 10)];
+      if (!m) return;
+      state.selectedDest = m.destOutpost;
+      destSelect.value = m.destOutpost;
+      state.selectedGood = m.packName;
+      updateGoodDropdown();
+      goodSelect.value = m.packName;
+      renderAll();
+    });
+  });
+}
+
+rewardSelect?.addEventListener("change", () => {
+  state.selectedReward = rewardSelect.value;
+  renderReverseProductSearch();
+});
+
+clearRewardSelectBtn?.addEventListener("click", () => {
+  if (!rewardSelect) return;
+  state.selectedReward = "";
+  rewardSelect.value = "";
+  renderReverseProductSearch();
+});
