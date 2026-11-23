@@ -1776,4 +1776,3 @@ syncMapViewportSize();
 window.addEventListener("resize", () => applyMapTransform());
 
 loadSheetData();
-```[cite: 1, 3]
