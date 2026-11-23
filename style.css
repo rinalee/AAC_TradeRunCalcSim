@@ -1332,3 +1332,76 @@ select:focus, input[type="text"]:focus {
     .craft-node-meta.is-raw {
       opacity: 0.65;
     }
+.reverse-search-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  padding: 16px 20px;
+}
+
+.reverse-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.reverse-count {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.reverse-results-empty {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 10px 2px;
+}
+
+.reverse-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.reverse-card {
+  background: var(--bg-row);
+  border: 1px solid var(--border-subtle);
+  padding: 10px 12px;
+  text-align: left;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.reverse-card:hover {
+  background: var(--bg-row-hover);
+  border-color: var(--border-strong);
+}
+
+.reverse-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reverse-pack-name {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.reverse-card-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
