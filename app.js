@@ -1654,21 +1654,24 @@ window.addEventListener("resize", () => applyMapTransform());
 
 loadSheetData();
 
+const GOLD_REWARD_OPTION_VALUE = "__GOLDS__";
+
 const rewardSelect = document.getElementById("rewardSelect");
 const clearRewardSelectBtn = document.getElementById("clearRewardSelectBtn");
 const reverseSearchResults = document.getElementById("reverseSearchResults");
 const reverseResultCount = document.getElementById("reverseResultCount");
 
-const GOLD_REWARD_OPTION_VALUE = "__GOLDS__";
+let cachedRewardOptionsHtml = null;
+let cachedSortedRewards = [];
+let cachedHasAnyGold = false;
+let cachedOutpostsRef = null;
 
-function populateRewardDropdown() {
-  if (!rewardSelect) return;
-  const prevVal = state.selectedReward || rewardSelect.value || "";
+function buildRewardCache() {
   let hasAnyGold = false;
   const uniqueItems = new Map();
 
-  for (const op of state.outposts) {
-    for (const s of op.sales) {
+  for (const op of state.outposts || []) {
+    for (const s of op.sales || []) {
       if (!s.reward) continue;
       if (s.reward.type === "gold") {
         hasAnyGold = true;
@@ -1684,24 +1687,41 @@ function populateRewardDropdown() {
   }
 
   const sortedItems = Array.from(uniqueItems.values()).sort((a, b) => a.localeCompare(b));
-  const optionsHtml = [];
-
+  const opts = ['<option value="">— Select a reward —</option>'];
   if (hasAnyGold) {
-    optionsHtml.push('<option value="' + GOLD_REWARD_OPTION_VALUE + '">Golds</option>');
+    opts.push('<option value="' + GOLD_REWARD_OPTION_VALUE + '">Golds</option>');
   }
-
   for (const val of sortedItems) {
-    optionsHtml.push('<option value="' + escapeHtml(val) + '">' + escapeHtml(val) + "</option>");
+    opts.push('<option value="' + escapeHtml(val) + '">' + escapeHtml(val) + "</option>");
   }
 
-  rewardSelect.innerHTML =
-    '<option value="">— Select a reward —</option>' + optionsHtml.join("");
+  cachedHasAnyGold = hasAnyGold;
+  cachedSortedRewards = sortedItems;
+  cachedRewardOptionsHtml = opts.join("");
+  cachedOutpostsRef = state.outposts;
+}
 
-  if (prevVal === GOLD_REWARD_OPTION_VALUE && hasAnyGold) {
+function populateRewardDropdown() {
+  if (!rewardSelect) return;
+
+  if (
+    cachedRewardOptionsHtml === null ||
+    cachedOutpostsRef !== state.outposts ||
+    (rewardSelect.options.length <= 1 && Array.isArray(state.outposts) && state.outposts.length > 0)
+  ) {
+    buildRewardCache();
+  }
+
+  if (!cachedRewardOptionsHtml) return;
+
+  const prevVal = state.selectedReward || rewardSelect.value || "";
+  rewardSelect.innerHTML = cachedRewardOptionsHtml;
+
+  if (prevVal === GOLD_REWARD_OPTION_VALUE && cachedHasAnyGold) {
     rewardSelect.value = GOLD_REWARD_OPTION_VALUE;
     state.selectedReward = GOLD_REWARD_OPTION_VALUE;
-  } else if (prevVal && sortedItems.some((v) => v.toLowerCase() === prevVal.toLowerCase())) {
-    const exact = sortedItems.find((v) => v.toLowerCase() === prevVal.toLowerCase()) || "";
+  } else if (prevVal && cachedSortedRewards.some((v) => v.toLowerCase() === prevVal.toLowerCase())) {
+    const exact = cachedSortedRewards.find((v) => v.toLowerCase() === prevVal.toLowerCase()) || "";
     rewardSelect.value = exact;
     state.selectedReward = exact;
   } else {
@@ -1728,8 +1748,8 @@ function renderReverseProductSearch() {
   const targetKey = selected.toLowerCase();
   const matches = [];
 
-  for (const op of state.outposts) {
-    for (const s of op.sales) {
+  for (const op of state.outposts || []) {
+    for (const s of op.sales || []) {
       if (!s.reward) continue;
       const rawReward = (s.reward.raw || "").trim();
       if (!rawReward) continue;
@@ -1810,4 +1830,8 @@ clearRewardSelectBtn?.addEventListener("click", () => {
   state.selectedReward = "";
   rewardSelect.value = "";
   renderReverseProductSearch();
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  populateRewardDropdown();
 });
