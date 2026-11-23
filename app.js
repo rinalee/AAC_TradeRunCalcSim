@@ -347,6 +347,8 @@ function applyData(outposts, lookupMap, modeLabel, dotClass, recipesMap) {
   statusDot.className = "status-dot " + dotClass;
   statusText.textContent = modeLabel + " (" + outposts.length + " Outposts · " + state.allGoods.length + " Packs · " + pricedCount + " Buy Prices) · " + now;
   footerSource.textContent = modeLabel;
+  
+  populateRewardDropdown();
 }
 
 async function fetchWithTimeout(url, ms = 6000) {
