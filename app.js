@@ -1090,13 +1090,17 @@ function ensureWagonCraftContainer() {
   const statCard = runItemsEl?.closest(".run-stat, .stat-card, .summary-card, [class*='stat']") || runItemsEl?.parentElement;
   const gridContainer = statCard?.parentElement;
 
-  if (gridContainer) {
+  // Place #wagonCraftSummary as its own separate full-width block below the stat grid
+  // so it never overlaps or fuses with the Item Rewards card.
+  const hostAfterGrid = gridContainer?.parentElement || statCard?.parentElement || runItemsEl?.parentElement;
+
+  if (gridContainer && hostAfterGrid && hostAfterGrid !== gridContainer) {
     wagonEl = document.createElement("div");
     wagonEl.id = "wagonCraftSummary";
     wagonEl.className = statCard?.className || "run-stat";
     wagonEl.style.cssText =
-      "grid-column: span 4; width: 100%; font-family: 'Times New Roman', Times, Georgia, serif;";
-    gridContainer.appendChild(wagonEl);
+      "display:block;width:100%;box-sizing:border-box;margin-top:10px;font-family:'Times New Roman',Times,Georgia,serif;";
+    gridContainer.insertAdjacentElement("afterend", wagonEl);
     return wagonEl;
   }
 
@@ -1109,8 +1113,9 @@ function ensureWagonCraftContainer() {
   if (wagonHost) {
     wagonEl = document.createElement("div");
     wagonEl.id = "wagonCraftSummary";
+    wagonEl.className = statCard?.className || "run-stat";
     wagonEl.style.cssText =
-      "margin-top:10px;padding:10px 12px;border-radius:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.02);font-family:'Times New Roman',Times,Georgia,serif;font-size:0.88rem;";
+      "display:block;width:100%;box-sizing:border-box;margin-top:10px;font-family:'Times New Roman',Times,Georgia,serif;";
     wagonHost.appendChild(wagonEl);
   }
   return wagonEl;
