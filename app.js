@@ -284,6 +284,7 @@ let state = {
   activeTab: "sale",
   rewardFilter: "all",
   searchQuery: "",
+  productSearchQuery: "",
   runSlots: [] // up to 7 pack names for trade run simulation
 };
 
@@ -296,6 +297,11 @@ const destSelect = document.getElementById("destSelect");
 const leftList = document.getElementById("leftList");
 const searchInput = document.getElementById("searchInput");
 const saleControls = document.getElementById("saleControls");
+const productSearchInput = document.getElementById("productSearchInput");
+const finalProductsDatalist = document.getElementById("finalProductsDatalist");
+const clearProductSearchBtn = document.getElementById("clearProductSearchBtn");
+const reverseSearchResults = document.getElementById("reverseSearchResults");
+const reverseResultCount = document.getElementById("reverseResultCount");
 
 function applyData(outposts, lookupMap, modeLabel, dotClass, recipesMap) {
   const dispatchByGoodKey = {};
@@ -547,6 +553,109 @@ function renderLeftPanel() {
     });
     leftList.appendChild(btn);
   }
+}
+
+function populateFinalProductsDatalist() {
+  if (!finalProductsDatalist) return;
+  const uniqueProducts = new Map();
+
+  for (const op of state.outposts) {
+    for (const s of op.sales) {
+      const raw = (s.reward && s.reward.raw ? s.reward.raw : "").trim();
+      if (!raw) continue;
+      const key = raw.toLowerCase();
+      if (!uniqueProducts.has(key)) {
+        uniqueProducts.set(key, raw);
+      }
+    }
+  }
+
+  const sorted = Array.from(uniqueProducts.values()).sort((a, b) => a.localeCompare(b));
+  finalProductsDatalist.innerHTML = sorted
+    .map((val) => '<option value="' + escapeHtml(val) + '"></option>')
+    .join("");
+}
+
+function renderReverseProductSearch() {
+  if (!productSearchInput || !reverseSearchResults || !reverseResultCount) return;
+
+  populateFinalProductsDatalist();
+
+  const query = (state.productSearchQuery || productSearchInput.value || "").trim().toLowerCase();
+  if (!query) {
+    reverseResultCount.textContent = "0 matches";
+    reverseSearchResults.className = "reverse-results-empty";
+    reverseSearchResults.textContent =
+      "Enter a final product or reward (Sheet 1 · Col C) to find matching packs (Sheet 1 · Col A).";
+    return;
+  }
+
+  const matches = [];
+  for (const op of state.outposts) {
+    for (const s of op.sales) {
+      const rawReward = (s.reward && s.reward.raw ? s.reward.raw : "").trim();
+      if (!rawReward) continue;
+      if (rawReward.toLowerCase().includes(query)) {
+        const gObj = state.allGoods.find((g) => g.key === s.key || g.name === s.good);
+        const originOutpost =
+          (gObj && gObj.originOutpost) ||
+          state.dispatchByGoodKey[s.key] ||
+          resolveOutpostFromRegion(s.region);
+
+        matches.push({
+          packName: s.good, // Feuille 1 · Colonne A
+          finalProduct: formatRewardLabel(s.reward), // Feuille 1 · Colonne C
+          rawReward,
+          isGold: s.reward.type === "gold",
+          region: s.region || "—",
+          originOutpost,
+          destOutpost: op.name
+        });
+      }
+    }
+  }
+
+  reverseResultCount.textContent =
+    matches.length + (matches.length === 1 ? " match" : " matches");
+
+  if (!matches.length) {
+    reverseSearchResults.className = "reverse-results-empty";
+    reverseSearchResults.textContent =
+      'No packs (Col A) found yielding "' + productSearchInput.value.trim() + '" in Col C.';
+    return;
+  }
+
+  reverseSearchResults.className = "reverse-results-grid";
+  reverseSearchResults.innerHTML = matches
+    .map(
+      (m, idx) =>
+        '<button type="button" class="reverse-card" data-idx="' + idx + '">' +
+          '<div class="reverse-card-top">' +
+            '<span class="reverse-pack-name">' + escapeHtml(m.packName) + '</span>' +
+            '<span class="good-reward-tag ' + (m.isGold ? "gold" : "") + '">' +
+              escapeHtml(m.finalProduct) +
+            '</span>' +
+          '</div>' +
+          '<div class="reverse-card-meta">' +
+            '<span>At: <strong>' + escapeHtml(m.destOutpost) + '</strong></span>' +
+            '<span>Region: ' + escapeHtml(m.region) + '</span>' +
+          '</div>' +
+        '</button>'
+    )
+    .join("");
+
+  reverseSearchResults.querySelectorAll(".reverse-card").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const m = matches[parseInt(btn.dataset.idx, 10)];
+      if (!m) return;
+      state.selectedDest = m.destOutpost;
+      destSelect.value = m.destOutpost;
+      state.selectedGood = m.packName;
+      updateGoodDropdown();
+      goodSelect.value = m.packName;
+      renderAll();
+    });
+  });
 }
 
 function formatSignedGold(val) {
@@ -878,6 +987,7 @@ function renderAll() {
   renderDetailsAndComparison();
   renderRunSimulation();
   renderCraftingEstimatorPanels();
+  renderReverseProductSearch();
 }
 
 // ============================================================================
@@ -1103,6 +1213,19 @@ destSelect.addEventListener("change", () => {
   renderAll();
 });
 
+productSearchInput?.addEventListener("input", () => {
+  state.productSearchQuery = productSearchInput.value;
+  renderReverseProductSearch();
+});
+
+clearProductSearchBtn?.addEventListener("click", () => {
+  if (!productSearchInput) return;
+  state.productSearchQuery = "";
+  productSearchInput.value = "";
+  renderReverseProductSearch();
+  productSearchInput.focus();
+});
+
 document.getElementById("refreshBtn").addEventListener("click", loadSheetData);
 
 document.getElementById("swapBtn").addEventListener("click", () => {
@@ -1143,8 +1266,8 @@ searchInput.addEventListener("input", () => {
 });
 
 document.addEventListener("keydown", e => {
-  if (document.activeElement === searchInput) {
-    if (e.key === "Escape") searchInput.blur();
+  if (document.activeElement === searchInput || document.activeElement === productSearchInput) {
+    if (e.key === "Escape") document.activeElement.blur();
     return;
   }
   if (e.key === "r" || e.key === "R") {
@@ -1653,3 +1776,4 @@ syncMapViewportSize();
 window.addEventListener("resize", () => applyMapTransform());
 
 loadSheetData();
+```[cite: 1, 3]
