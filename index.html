@@ -64,7 +64,40 @@
         </div>
       </div>
     </section>
+<section id="reverseSearchPanel" class="reverse-search-panel">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="diamond-icon" style="width:8px;height:8px;"></span>
+          <span>Find Packs by Final Product (Col A ← Col C)</span>
+        </div>
+        <span id="reverseResultCount" class="reverse-count">0 matches</span>
+      </div>
 
+      <div class="reverse-controls">
+        <div class="field-group" style="flex: 1; min-width: 240px;">
+          <label class="field-label" for="productSearchInput">
+            <span>Target Final Product / Reward (Sheet 1 · Col C)</span>
+            <span>Substring or exact match</span>
+          </label>
+          <input
+            type="text"
+            id="productSearchInput"
+            list="finalProductsDatalist"
+            placeholder="e.g. Standard Lumber, Watermelon Seedling, 44753~62654G..."
+            autocomplete="off"
+          />
+          <datalist id="finalProductsDatalist"></datalist>
+        </div>
+
+        <button type="button" id="clearProductSearchBtn" class="btn-ghost" title="Clear product search">
+          Clear
+        </button>
+      </div>
+
+      <div id="reverseSearchResults" class="reverse-results-empty">
+        Type a final product or reward name (Column C) to see which packs (Column A) yield it.
+      </div>
+    </section>
     <div class="main-grid">
       <aside class="panel left-sidebar">
         <div class="map-widget" id="mapWidget">
