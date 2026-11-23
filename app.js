@@ -922,14 +922,14 @@ function packHasCraftOrMaterials(packName) {
 function buildCraftTreeNodesHtml(nodes, depth = 0) {
   if (!Array.isArray(nodes) || nodes.length === 0) return "";
   return (
-    '<ul class="craft-tree-list" style="list-style:none;padding-left:0;margin:4px 0 4px ' + (depth * 14) + 'px;">' +
+    '<ul class="craft-tree-list" style="--tree-depth:' + depth + ';">' +
     nodes
       .map((node) => {
         const meta = node.craftRuns > 0
-          ? ' <span class="craft-node-meta" style="opacity:0.78;font-size:0.82em;">(' + node.craftRuns + ' craft' + (node.craftRuns > 1 ? "s" : "") + ' · ' + node.craftGoldCost.toLocaleString() + 'G)</span>'
-          : ' <span class="craft-node-meta" style="opacity:0.65;font-size:0.82em;">(Raw/Base)</span>';
+          ? ' <span class="craft-node-meta">(' + node.craftRuns + ' craft' + (node.craftRuns > 1 ? "s" : "") + ' · ' + node.craftGoldCost.toLocaleString() + 'G)</span>'
+          : ' <span class="craft-node-meta is-raw">(Raw/Base)</span>';
         return (
-          '<li class="craft-tree-node" style="margin:3px 0;">' +
+          '<li class="craft-tree-node">' +
             '<span class="craft-node-label">' + escapeHtml(node.neededQty) + '× <strong>' + escapeHtml(node.itemName) + '</strong></span>' +
             meta +
             buildCraftTreeNodesHtml(node.children, depth + 1) +
@@ -941,97 +941,39 @@ function buildCraftTreeNodesHtml(nodes, depth = 0) {
   );
 }
 
-function ensureStyleInjection() {
-  if (document.getElementById("craftEstimatorCustomStyle")) return;
-  const style = document.createElement("style");
-  style.id = "craftEstimatorCustomStyle";
-  style.textContent = [
-    ".good-reward-tag, .good-name, .good-origin {",
-    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
-    "}",
-    "#craftFloatingModal, #craftFloatingModal * {",
-    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
-    "}",
-    "#wagonCraftSummary {",
-    "  grid-column: 1 / -1;",
-    "}",
-    "#wagonCraftSummary .run-stat-value {",
-    "  font-family: inherit;",
-    "  font-size: 0.88rem;",
-    "  line-height: 1.45;",
-    "}",
-    "#showCraftDetailsBtn {",
-    "  display: none;",
-    "  width: fit-content !important;",
-    "  max-width: max-content !important;",
-    "  flex: 0 0 auto !important;",
-    "  align-self: flex-start !important;",
-    "  margin-top: 8px;",
-    "  padding: 5px 10px;",
-    "  border-radius: 4px;",
-    "  border: 1px solid var(--border-subtle, rgba(255,255,255,0.22));",
-    "  background: var(--bg-row, rgba(255,255,255,0.06));",
-    "  color: var(--text-primary, #f3efe6);",
-    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
-    "  font-size: 0.82rem;",
-    "  font-weight: 600;",
-    "  line-height: 1.2;",
-    "  white-space: nowrap;",
-    "  cursor: pointer;",
-    "}",
-    "#showCraftDetailsBtn:hover {",
-    "  background: rgba(255,255,255,0.12);",
-    "  border-color: rgba(255,255,255,0.34);",
-    "}"
-  ].join("\n");
-  document.head.appendChild(style);
-}
+let craftModalBound = false;
 
-function ensureFloatingCraftModal() {
-  ensureStyleInjection();
-  let modal = document.getElementById("craftFloatingModal");
-  if (modal) return modal;
+function getCraftModalElements() {
+  const modal = document.getElementById("craftFloatingModal");
+  if (!modal) return null;
 
-  modal = document.createElement("div");
-  modal.id = "craftFloatingModal";
-  modal.style.cssText =
-    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;font-family:'Times New Roman',Times,Georgia,serif;";
+  if (!craftModalBound) {
+    craftModalBound = true;
+    const closeModal = () => {
+      modal.style.display = "none";
+    };
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+    document.getElementById("craftModalCloseBtn")?.addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.style.display === "flex") {
+        closeModal();
+      }
+    });
+  }
 
-  modal.innerHTML =
-    '<div id="craftFloatingBox" style="width:100%;max-width:620px;max-height:84vh;overflow:auto;border-radius:6px;border:1px solid rgba(255,255,255,0.16);background:var(--panel-bg,#161513);color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);font-family:\'Times New Roman\',Times,Georgia,serif;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:10px;margin-bottom:12px;">' +
-        '<div>' +
-          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.72;">Pack Crafting Breakdown</div>' +
-          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;">—</div>' +
-        '</div>' +
-        '<button type="button" id="craftModalCloseBtn" style="width:fit-content;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:0.9rem;">✕</button>' +
-      '</div>' +
-      '<div id="craftModalBody" style="font-size:0.88rem;"></div>' +
-    '</div>';
-
-  document.body.appendChild(modal);
-
-  const closeModal = () => {
-    modal.style.display = "none";
+  return {
+    modal,
+    titleEl: document.getElementById("craftModalTitle"),
+    bodyEl: document.getElementById("craftModalBody")
   };
-
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal();
-  });
-  modal.querySelector("#craftModalCloseBtn")?.addEventListener("click", closeModal);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal.style.display === "flex") {
-      closeModal();
-    }
-  });
-
-  return modal;
 }
 
 function openFloatingCraftModal(packName) {
-  const modal = ensureFloatingCraftModal();
-  const titleEl = modal.querySelector("#craftModalTitle");
-  const bodyEl = modal.querySelector("#craftModalBody");
+  const els = getCraftModalElements();
+  if (!els) return;
+  const { modal, titleEl, bodyEl } = els;
   const est = getPackCraftingEstimate(packName);
 
   if (titleEl) titleEl.textContent = packName || "Pack Details";
@@ -1040,86 +982,46 @@ function openFloatingCraftModal(packName) {
   if (!est) {
     bodyEl.innerHTML = '<div class="empty-msg">No crafting breakdown available for this pack.</div>';
   } else {
-    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:\'Times New Roman\',Times,Georgia,serif;";
-    const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;";
-
     const rawHtml = est.rawMaterials.length
-      ? est.rawMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
-      : '<span style="opacity:0.65;">—</span>';
+      ? est.rawMaterials.map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      : '<span class="craft-empty-dash">—</span>';
 
     const midHtml = est.intermediateMaterials.length
-      ? est.intermediateMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
-      : '<span style="opacity:0.65;">—</span>';
+      ? est.intermediateMaterials.map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+      : '<span class="craft-empty-dash">—</span>';
 
     bodyEl.innerHTML =
-      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);margin-bottom:12px;">' +
+      '<div class="craft-modal-totals">' +
         '<div>Total Gold: <strong>' + est.totalGoldCost.toLocaleString() + ' G</strong></div>' +
         '<div>Craft Gold: <strong>' + est.craftingGoldTotal.toLocaleString() + ' G</strong></div>' +
         '<div>Pack / Cost: <strong>' + est.packingGoldCost.toLocaleString() + ' G</strong></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
-      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:6px;">Intermediate Sub-Components</div><div style="' + chipWrapStyle + '">' + midHtml + '</div></div>' +
-      '<div><div style="font-weight:600;margin-bottom:6px;">Total Raw Base Materials (1 Pack)</div><div style="' + chipWrapStyle + '">' + rawHtml + '</div></div>';
+      '<div class="craft-modal-section"><div class="craft-modal-heading">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
+      '<div class="craft-modal-section"><div class="craft-modal-heading">Intermediate Sub-Components</div><div class="craft-chip-row">' + midHtml + '</div></div>' +
+      '<div class="craft-modal-section"><div class="craft-modal-heading">Total Raw Base Materials (1 Pack)</div><div class="craft-chip-row">' + rawHtml + '</div></div>';
   }
 
   modal.style.display = "flex";
 }
 
-function ensureShowDetailsButton() {
-  ensureStyleInjection();
-  const matsRowEl = document.getElementById("matsRow");
-  const costSectionEl = document.getElementById("costSection");
-  const host = matsRowEl || costSectionEl || document.getElementById("detailRouteBadge")?.parentElement;
-
-  if (!host) return null;
-
-  let btn = document.getElementById("showCraftDetailsBtn");
-  if (!btn) {
-    btn = document.createElement("button");
-    btn.id = "showCraftDetailsBtn";
-    btn.type = "button";
-    btn.textContent = "Show details";
-    btn.addEventListener("click", () => {
-      if (state.selectedGood) {
-        openFloatingCraftModal(state.selectedGood);
-      }
-    });
-    host.appendChild(btn);
-  }
-  return btn;
-}
-
-function ensureWagonCraftContainer() {
-  ensureStyleInjection();
-  let wagonEl = document.getElementById("wagonCraftSummary");
-  if (wagonEl) return wagonEl;
-
-  const runItemsEl = document.getElementById("runItems");
-  const statCard = runItemsEl?.closest(".run-stat");
-  const summaryGrid = statCard?.parentElement || document.querySelector(".run-summary");
-
-  if (summaryGrid) {
-    wagonEl = document.createElement("div");
-    wagonEl.id = "wagonCraftSummary";
-    wagonEl.className = "run-stat";
-    summaryGrid.appendChild(wagonEl);
-  }
-  return wagonEl;
-}
-
 function renderCraftingEstimatorPanels() {
-  ensureStyleInjection();
-  const detailsBtn = ensureShowDetailsButton();
+  const detailsBtn = document.getElementById("showCraftDetailsBtn");
   if (detailsBtn) {
+    if (!detailsBtn.dataset.bound) {
+      detailsBtn.dataset.bound = "1";
+      detailsBtn.addEventListener("click", () => {
+        if (state.selectedGood) {
+          openFloatingCraftModal(state.selectedGood);
+        }
+      });
+    }
     const canShow = Boolean(state.selectedGood) && packHasCraftOrMaterials(state.selectedGood);
     detailsBtn.style.display = canShow ? "inline-flex" : "none";
   }
 
-  const wagonEl = ensureWagonCraftContainer();
+  const wagonEl = document.getElementById("wagonCraftSummary");
   if (wagonEl) {
     const wagonEst = getWagonCraftingEstimate(state.runSlots);
-    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-size:0.8rem;";
-    const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;margin-top:4px;";
 
     if (!wagonEst || wagonEst.packCount === 0) {
       wagonEl.innerHTML =
@@ -1127,23 +1029,23 @@ function renderCraftingEstimatorPanels() {
         '<div class="run-stat-value">—</div>';
     } else {
       const rawChips = wagonEst.rawMaterials.length
-        ? wagonEst.rawMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
-        : '<span style="opacity:0.65;">—</span>';
+        ? wagonEst.rawMaterials.map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+        : '<span class="craft-empty-dash">—</span>';
       const midChips = wagonEst.intermediateMaterials.length
-        ? wagonEst.intermediateMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
-        : '<span style="opacity:0.65;">—</span>';
+        ? wagonEst.intermediateMaterials.map((m) => '<span class="mat-chip">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+        : '<span class="craft-empty-dash">—</span>';
 
       wagonEl.innerHTML =
         '<div class="run-stat-label">Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + ') · ' +
           wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
-        '<div class="run-stat-value" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">' +
+        '<div class="run-stat-value wagon-craft-grid">' +
           '<div>' +
             '<div class="run-stat-label">Intermediate Sub-Components</div>' +
-            '<div style="' + chipWrapStyle + '">' + midChips + '</div>' +
+            '<div class="craft-chip-row">' + midChips + '</div>' +
           '</div>' +
           '<div>' +
             '<div class="run-stat-label">Total Raw Materials</div>' +
-            '<div style="' + chipWrapStyle + '">' + rawChips + '</div>' +
+            '<div class="craft-chip-row">' + rawChips + '</div>' +
           '</div>' +
         '</div>';
     }
