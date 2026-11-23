@@ -40,9 +40,7 @@ An interactive web-based trade run calculator, route visualizer, and profit esti
 
 ## Roadmap & Planned Features
 
-- **Job Proficiency Levels (`Novice` / `Apprentice`/ `Journeyman` /`Expert` / `Master`)**:
-  - Add profeciency level selection per processing type (such as `Food`, `Wildcraft`, and other processing methods) inside the calculator.
-  - Apply reduced ingredient consumption and increased yield/output for higher ranks on **Tier 1 (`Standard`)** and **Tier 2 (`Fine`)** materials once the higher-tier recipe/ingredient tables are updated.
+- ***TBD***
 
 ---
 
