@@ -952,6 +952,14 @@ function ensureStyleInjection() {
     "#craftFloatingModal, #craftFloatingModal * {",
     "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
     "}",
+    "#wagonCraftSummary {",
+    "  grid-column: 1 / -1;",
+    "}",
+    "#wagonCraftSummary .run-stat-value {",
+    "  font-family: inherit;",
+    "  font-size: 0.88rem;",
+    "  line-height: 1.45;",
+    "}",
     "#showCraftDetailsBtn {",
     "  display: none;",
     "  width: fit-content !important;",
@@ -961,8 +969,8 @@ function ensureStyleInjection() {
     "  margin-top: 8px;",
     "  padding: 5px 10px;",
     "  border-radius: 4px;",
-    "  border: 1px solid rgba(255,255,255,0.22);",
-    "  background: rgba(255,255,255,0.06);",
+    "  border: 1px solid var(--border-subtle, rgba(255,255,255,0.22));",
+    "  background: var(--bg-row, rgba(255,255,255,0.06));",
     "  color: var(--text-primary, #f3efe6);",
     "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
     "  font-size: 0.82rem;",
@@ -1087,36 +1095,14 @@ function ensureWagonCraftContainer() {
   if (wagonEl) return wagonEl;
 
   const runItemsEl = document.getElementById("runItems");
-  const statCard = runItemsEl?.closest(".run-stat, .stat-card, .summary-card, [class*='stat']") || runItemsEl?.parentElement;
-  const gridContainer = statCard?.parentElement;
+  const statCard = runItemsEl?.closest(".run-stat");
+  const summaryGrid = statCard?.parentElement || document.querySelector(".run-summary");
 
-  // Place #wagonCraftSummary as its own separate full-width block below the stat grid
-  // so it never overlaps or fuses with the Item Rewards card.
-  const hostAfterGrid = gridContainer?.parentElement || statCard?.parentElement || runItemsEl?.parentElement;
-
-  if (gridContainer && hostAfterGrid && hostAfterGrid !== gridContainer) {
+  if (summaryGrid) {
     wagonEl = document.createElement("div");
     wagonEl.id = "wagonCraftSummary";
-    wagonEl.className = statCard?.className || "run-stat";
-    wagonEl.style.cssText =
-      "display:block;width:100%;box-sizing:border-box;margin-top:10px;font-family:'Times New Roman',Times,Georgia,serif;";
-    gridContainer.insertAdjacentElement("afterend", wagonEl);
-    return wagonEl;
-  }
-
-  const wagonHost =
-    runItemsEl?.closest(".run-summary") ||
-    runItemsEl?.closest(".panel") ||
-    runItemsEl?.parentElement ||
-    document.getElementById("runSlots")?.parentElement;
-
-  if (wagonHost) {
-    wagonEl = document.createElement("div");
-    wagonEl.id = "wagonCraftSummary";
-    wagonEl.className = statCard?.className || "run-stat";
-    wagonEl.style.cssText =
-      "display:block;width:100%;box-sizing:border-box;margin-top:10px;font-family:'Times New Roman',Times,Georgia,serif;";
-    wagonHost.appendChild(wagonEl);
+    wagonEl.className = "run-stat";
+    summaryGrid.appendChild(wagonEl);
   }
   return wagonEl;
 }
@@ -1132,13 +1118,13 @@ function renderCraftingEstimatorPanels() {
   const wagonEl = ensureWagonCraftContainer();
   if (wagonEl) {
     const wagonEst = getWagonCraftingEstimate(state.runSlots);
-    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:'Times New Roman',Times,Georgia,serif;font-size:0.82rem;";
+    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-size:0.8rem;";
     const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;margin-top:4px;";
 
     if (!wagonEst || wagonEst.packCount === 0) {
       wagonEl.innerHTML =
-        '<div style="opacity:0.75;font-size:0.82rem;margin-bottom:4px;">Wagon Craft & Materials (0/' + RUN_CAPACITY + ')</div>' +
-        '<div style="font-size:1rem;font-weight:700;">—</div>';
+        '<div class="run-stat-label">Wagon Craft & Materials (0/' + RUN_CAPACITY + ')</div>' +
+        '<div class="run-stat-value">—</div>';
     } else {
       const rawChips = wagonEst.rawMaterials.length
         ? wagonEst.rawMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
@@ -1148,17 +1134,15 @@ function renderCraftingEstimatorPanels() {
         : '<span style="opacity:0.65;">—</span>';
 
       wagonEl.innerHTML =
-        '<div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
-          '<span style="font-size:0.84rem;opacity:0.8;">Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + ')</span>' +
-          '<span style="font-size:1.05rem;font-weight:700;">' + wagonEst.totalGoldCost.toLocaleString() + ' G <span style="font-size:0.84rem;font-weight:400;opacity:0.85;">(Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</span></span>' +
-        '</div>' +
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">' +
+        '<div class="run-stat-label">Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + ') · ' +
+          wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
+        '<div class="run-stat-value" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">' +
           '<div>' +
-            '<div style="font-size:0.82rem;font-weight:600;opacity:0.85;">Intermediate Sub-Components</div>' +
+            '<div class="run-stat-label">Intermediate Sub-Components</div>' +
             '<div style="' + chipWrapStyle + '">' + midChips + '</div>' +
           '</div>' +
           '<div>' +
-            '<div style="font-size:0.82rem;font-weight:600;opacity:0.85;">Total Raw Materials</div>' +
+            '<div class="run-stat-label">Total Raw Materials</div>' +
             '<div style="' + chipWrapStyle + '">' + rawChips + '</div>' +
           '</div>' +
         '</div>';
