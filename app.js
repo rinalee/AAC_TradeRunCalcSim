@@ -941,25 +941,64 @@ function buildCraftTreeNodesHtml(nodes, depth = 0) {
   );
 }
 
+function ensureStyleInjection() {
+  if (document.getElementById("craftEstimatorCustomStyle")) return;
+  const style = document.createElement("style");
+  style.id = "craftEstimatorCustomStyle";
+  style.textContent = [
+    ".good-reward-tag, .good-name, .good-origin {",
+    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
+    "}",
+    "#craftFloatingModal, #craftFloatingModal * {",
+    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
+    "}",
+    "#showCraftDetailsBtn {",
+    "  display: none;",
+    "  width: fit-content !important;",
+    "  max-width: max-content !important;",
+    "  flex: 0 0 auto !important;",
+    "  align-self: flex-start !important;",
+    "  margin-top: 8px;",
+    "  padding: 5px 10px;",
+    "  border-radius: 4px;",
+    "  border: 1px solid rgba(255,255,255,0.22);",
+    "  background: rgba(255,255,255,0.06);",
+    "  color: var(--text-primary, #f3efe6);",
+    "  font-family: \"Times New Roman\", Times, Georgia, serif !important;",
+    "  font-size: 0.82rem;",
+    "  font-weight: 600;",
+    "  line-height: 1.2;",
+    "  white-space: nowrap;",
+    "  cursor: pointer;",
+    "}",
+    "#showCraftDetailsBtn:hover {",
+    "  background: rgba(255,255,255,0.12);",
+    "  border-color: rgba(255,255,255,0.34);",
+    "}"
+  ].join("\n");
+  document.head.appendChild(style);
+}
+
 function ensureFloatingCraftModal() {
+  ensureStyleInjection();
   let modal = document.getElementById("craftFloatingModal");
   if (modal) return modal;
 
   modal = document.createElement("div");
   modal.id = "craftFloatingModal";
   modal.style.cssText =
-    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;font-family:var(--font-sans,inherit);";
+    "display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:16px;font-family:'Times New Roman',Times,Georgia,serif;";
 
   modal.innerHTML =
-    '<div id="craftFloatingBox" style="width:100%;max-width:580px;max-height:84vh;overflow:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:#181715;color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);font-family:var(--font-sans,inherit);">' +
+    '<div id="craftFloatingBox" style="width:100%;max-width:620px;max-height:84vh;overflow:auto;border-radius:6px;border:1px solid rgba(255,255,255,0.16);background:var(--panel-bg,#161513);color:var(--text-primary,#f3efe6);padding:16px 18px;box-shadow:0 18px 48px rgba(0,0,0,0.65);font-family:\'Times New Roman\',Times,Georgia,serif;">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid rgba(255,255,255,0.12);padding-bottom:10px;margin-bottom:12px;">' +
         '<div>' +
-          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.7;font-family:var(--font-sans,inherit);">Pack Crafting Breakdown</div>' +
-          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;font-family:var(--font-sans,inherit);">—</div>' +
+          '<div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.72;">Pack Crafting Breakdown</div>' +
+          '<div id="craftModalTitle" style="font-size:1.05rem;font-weight:700;">—</div>' +
         '</div>' +
-        '<button type="button" id="craftModalCloseBtn" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.9rem;font-family:var(--font-sans,inherit);">✕</button>' +
+        '<button type="button" id="craftModalCloseBtn" style="width:fit-content;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.16);color:inherit;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:0.9rem;">✕</button>' +
       '</div>' +
-      '<div id="craftModalBody" style="font-size:0.88rem;font-family:var(--font-sans,inherit);"></div>' +
+      '<div id="craftModalBody" style="font-size:0.88rem;"></div>' +
     '</div>';
 
   document.body.appendChild(modal);
@@ -993,7 +1032,7 @@ function openFloatingCraftModal(packName) {
   if (!est) {
     bodyEl.innerHTML = '<div class="empty-msg">No crafting breakdown available for this pack.</div>';
   } else {
-    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:var(--font-sans,inherit);";
+    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:\'Times New Roman\',Times,Georgia,serif;";
     const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;";
 
     const rawHtml = est.rawMaterials.length
@@ -1005,24 +1044,24 @@ function openFloatingCraftModal(packName) {
       : '<span style="opacity:0.65;">—</span>';
 
     bodyEl.innerHTML =
-      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:7px;background:rgba(255,255,255,0.04);margin-bottom:12px;font-family:var(--font-sans,inherit);">' +
+      '<div style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 10px;border-radius:4px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.03);margin-bottom:12px;">' +
         '<div>Total Gold: <strong>' + est.totalGoldCost.toLocaleString() + ' G</strong></div>' +
         '<div>Craft Gold: <strong>' + est.craftingGoldTotal.toLocaleString() + ' G</strong></div>' +
         '<div>Pack / Cost: <strong>' + est.packingGoldCost.toLocaleString() + ' G</strong></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;font-family:var(--font-sans,inherit);">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
-      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:6px;font-family:var(--font-sans,inherit);">Intermediate Sub-Components</div><div style="' + chipWrapStyle + '">' + midHtml + '</div></div>' +
-      '<div><div style="font-weight:600;margin-bottom:6px;font-family:var(--font-sans,inherit);">Total Raw Base Materials (1 Pack)</div><div style="' + chipWrapStyle + '">' + rawHtml + '</div></div>';
+      '<div style="margin-bottom:10px;"><div style="font-weight:600;margin-bottom:4px;">Recursive Recipe Tree</div>' + buildCraftTreeNodesHtml(est.trees, 0) + '</div>' +
+      '<div style="margin-bottom:8px;"><div style="font-weight:600;margin-bottom:6px;">Intermediate Sub-Components</div><div style="' + chipWrapStyle + '">' + midHtml + '</div></div>' +
+      '<div><div style="font-weight:600;margin-bottom:6px;">Total Raw Base Materials (1 Pack)</div><div style="' + chipWrapStyle + '">' + rawHtml + '</div></div>';
   }
 
   modal.style.display = "flex";
 }
 
 function ensureShowDetailsButton() {
-  const host =
-    document.getElementById("matsRow")?.parentElement ||
-    document.getElementById("costSection")?.parentElement ||
-    document.getElementById("detailRouteBadge")?.parentElement;
+  ensureStyleInjection();
+  const matsRowEl = document.getElementById("matsRow");
+  const costSectionEl = document.getElementById("costSection");
+  const host = matsRowEl || costSectionEl || document.getElementById("detailRouteBadge")?.parentElement;
 
   if (!host) return null;
 
@@ -1032,8 +1071,6 @@ function ensureShowDetailsButton() {
     btn.id = "showCraftDetailsBtn";
     btn.type = "button";
     btn.textContent = "Show details";
-    btn.style.cssText =
-      "display:none;margin-top:10px;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;font-family:var(--font-sans,inherit);font-size:0.84rem;font-weight:600;cursor:pointer;";
     btn.addEventListener("click", () => {
       if (state.selectedGood) {
         openFloatingCraftModal(state.selectedGood);
@@ -1045,26 +1082,42 @@ function ensureShowDetailsButton() {
 }
 
 function ensureWagonCraftContainer() {
+  ensureStyleInjection();
   let wagonEl = document.getElementById("wagonCraftSummary");
   if (wagonEl) return wagonEl;
 
+  const runItemsEl = document.getElementById("runItems");
+  const statCard = runItemsEl?.closest(".run-stat, .stat-card, .summary-card, [class*='stat']") || runItemsEl?.parentElement;
+  const gridContainer = statCard?.parentElement;
+
+  if (gridContainer) {
+    wagonEl = document.createElement("div");
+    wagonEl.id = "wagonCraftSummary";
+    wagonEl.className = statCard?.className || "run-stat";
+    wagonEl.style.cssText =
+      "grid-column: span 4; width: 100%; font-family: 'Times New Roman', Times, Georgia, serif;";
+    gridContainer.appendChild(wagonEl);
+    return wagonEl;
+  }
+
   const wagonHost =
-    document.getElementById("runItems")?.closest(".run-summary") ||
-    document.getElementById("runItems")?.closest(".panel") ||
-    document.getElementById("runItems")?.parentElement ||
+    runItemsEl?.closest(".run-summary") ||
+    runItemsEl?.closest(".panel") ||
+    runItemsEl?.parentElement ||
     document.getElementById("runSlots")?.parentElement;
 
   if (wagonHost) {
     wagonEl = document.createElement("div");
     wagonEl.id = "wagonCraftSummary";
     wagonEl.style.cssText =
-      "margin-top:10px;padding:9px 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.2);font-family:var(--font-sans,inherit);font-size:0.85rem;";
+      "margin-top:10px;padding:10px 12px;border-radius:4px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.02);font-family:'Times New Roman',Times,Georgia,serif;font-size:0.88rem;";
     wagonHost.appendChild(wagonEl);
   }
   return wagonEl;
 }
 
 function renderCraftingEstimatorPanels() {
+  ensureStyleInjection();
   const detailsBtn = ensureShowDetailsButton();
   if (detailsBtn) {
     const canShow = Boolean(state.selectedGood) && packHasCraftOrMaterials(state.selectedGood);
@@ -1074,20 +1127,36 @@ function renderCraftingEstimatorPanels() {
   const wagonEl = ensureWagonCraftContainer();
   if (wagonEl) {
     const wagonEst = getWagonCraftingEstimate(state.runSlots);
+    const chipStyle = "display:inline-flex;align-items:center;white-space:nowrap;flex-shrink:0;width:max-content;margin:0;font-family:'Times New Roman',Times,Georgia,serif;font-size:0.82rem;";
+    const chipWrapStyle = "display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;margin-top:4px;";
+
     if (!wagonEst || wagonEst.packCount === 0) {
-      wagonEl.innerHTML = '<span style="opacity:0.7;">Wagon Craft & Materials (0/' + RUN_CAPACITY + '): —</span>';
-    } else {
-      const rawText = wagonEst.rawMaterials.length
-        ? wagonEst.rawMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
-        : "—";
-      const midText = wagonEst.intermediateMaterials.length
-        ? wagonEst.intermediateMaterials.map((m) => m.name + " ×" + m.qty).join(", ")
-        : "—";
       wagonEl.innerHTML =
-        '<div><strong>Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + '):</strong> ' +
-        wagonEst.totalGoldCost.toLocaleString() + ' G (Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</div>' +
-        '<div style="margin-top:4px;"><strong>Intermediate Sub-Components:</strong> ' + escapeHtml(midText) + '</div>' +
-        '<div style="margin-top:4px;"><strong>Total Raw Materials:</strong> ' + escapeHtml(rawText) + '</div>';
+        '<div style="opacity:0.75;font-size:0.82rem;margin-bottom:4px;">Wagon Craft & Materials (0/' + RUN_CAPACITY + ')</div>' +
+        '<div style="font-size:1rem;font-weight:700;">—</div>';
+    } else {
+      const rawChips = wagonEst.rawMaterials.length
+        ? wagonEst.rawMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+        : '<span style="opacity:0.65;">—</span>';
+      const midChips = wagonEst.intermediateMaterials.length
+        ? wagonEst.intermediateMaterials.map((m) => '<span class="mat-chip" style="' + chipStyle + '">' + escapeHtml(m.name) + " ×" + escapeHtml(m.qty) + "</span>").join("")
+        : '<span style="opacity:0.65;">—</span>';
+
+      wagonEl.innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
+          '<span style="font-size:0.84rem;opacity:0.8;">Wagon Craft Total (' + wagonEst.packCount + '/' + wagonEst.maxSlots + ')</span>' +
+          '<span style="font-size:1.05rem;font-weight:700;">' + wagonEst.totalGoldCost.toLocaleString() + ' G <span style="font-size:0.84rem;font-weight:400;opacity:0.85;">(Craft: ' + wagonEst.totalCraftingGold.toLocaleString() + ' G · Pack/Cost: ' + wagonEst.totalPackingGold.toLocaleString() + ' G)</span></span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;">' +
+          '<div>' +
+            '<div style="font-size:0.82rem;font-weight:600;opacity:0.85;">Intermediate Sub-Components</div>' +
+            '<div style="' + chipWrapStyle + '">' + midChips + '</div>' +
+          '</div>' +
+          '<div>' +
+            '<div style="font-size:0.82rem;font-weight:600;opacity:0.85;">Total Raw Materials</div>' +
+            '<div style="' + chipWrapStyle + '">' + rawChips + '</div>' +
+          '</div>' +
+        '</div>';
     }
   }
 }
