@@ -130,7 +130,7 @@
   /**
    * Parse l'onglet "Lookup" avec les colonnes :
    * Trade Goods for Sale | Trademark Region | Cost | Packing Cost |
-   * Material 1 | Quantity | Arcane Sealed Chest | Blank Trade Certificate
+   * Material 1 | Quantity | Arcane Sealed Chest | Blank Trade Certificate | Sweetgrass Powder
    */
   function buildLookupPackMap(csvText) {
     const rows = parseCsvRows(csvText);
@@ -145,6 +145,7 @@
     const idxQty = header.indexOf("quantity");
     const idxChest = header.findIndex((h) => h.startsWith("arcane sealed chest"));
     const idxCert = header.findIndex((h) => h.startsWith("blank trade certificate"));
+    const idxSweetgrass = header.findIndex((h) => h.startsWith("sweetgrass powder"));
 
     const toFlag = (val) => {
       const s = String(val ?? "").trim().toLowerCase();
@@ -165,6 +166,9 @@
       const packName = (row[idxName] || "").trim();
       if (!packName) continue;
 
+      const sweetgrassCol = idxSweetgrass >= 0 ? idxSweetgrass : 8; // Colonne I (index 8) par défaut
+      const sweetgrassPowder = Math.max(0, toNum(row[sweetgrassCol], 0));
+
       const entry = {
         packName,
         trademarkRegion: idxRegion >= 0 ? (row[idxRegion] || "").trim() : "",
@@ -173,7 +177,8 @@
         material1: idxMat1 >= 0 ? (row[idxMat1] || "").trim() : "",
         quantity: idxQty >= 0 ? Math.max(1, toNum(row[idxQty], 1)) : 1,
         hasArcaneSealedChest: idxChest >= 0 ? toFlag(row[idxChest]) : false,
-        hasBlankTradeCertificate: idxCert >= 0 ? toFlag(row[idxCert]) : false
+        hasBlankTradeCertificate: idxCert >= 0 ? toFlag(row[idxCert]) : false,
+        sweetgrassPowder
       };
 
       lookupMap.set(normalizeItemKey(packName), entry);
@@ -335,10 +340,6 @@
     };
   }
 
-  /**
-   * Estime 1 pack directement depuis une entrée Lookup + la map Craft/Recipes.
-   */
-
   function canonicalPackKey(name) {
     return String(name || "")
       .trim()
@@ -379,13 +380,14 @@
     if (!entry) return null;
 
     // Normalize both schema shapes:
-    // Shape A (buildLookupPackMap): { packName, trademarkRegion, cost, packingCost, material1, quantity, hasArcaneSealedChest, hasBlankTradeCertificate }
-    // Shape B (app.js parseLookupTable): { name, region, costGold, packingCostGold, buyPriceGold, materials: [{name, qty}, ...] }
+    // Shape A (buildLookupPackMap): { packName, trademarkRegion, cost, packingCost, material1, quantity, hasArcaneSealedChest, hasBlankTradeCertificate, sweetgrassPowder }
+    // Shape B (app.js parseLookupTable): { name, region, costGold, packingCostGold, buyPriceGold, materials: [{name, qty}, ...], sweetgrassPowder }
     if (Array.isArray(entry.materials)) {
       let material1 = entry.material1 || "";
       let quantity = entry.quantity || 0;
       let hasArcaneSealedChest = Boolean(entry.hasArcaneSealedChest);
       let hasBlankTradeCertificate = Boolean(entry.hasBlankTradeCertificate);
+      let sweetgrassPowder = Math.max(0, Number(entry.sweetgrassPowder) || 0);
       const extraMaterials = [];
 
       for (const m of entry.materials) {
@@ -397,6 +399,8 @@
           hasArcaneSealedChest = true;
         } else if (mLower === "blank trade certificate") {
           hasBlankTradeCertificate = true;
+        } else if (mLower === "sweetgrass powder") {
+          sweetgrassPowder = Math.max(sweetgrassPowder, mQty);
         } else if (!material1 && mName) {
           material1 = mName;
           quantity = mQty;
@@ -417,16 +421,21 @@
         quantity: quantity || 1,
         hasArcaneSealedChest,
         hasBlankTradeCertificate,
+        sweetgrassPowder,
         extraMaterials
       };
     }
 
     return {
       ...entry,
+      sweetgrassPowder: Math.max(0, Number(entry.sweetgrassPowder) || 0),
       extraMaterials: Array.isArray(entry.extraMaterials) ? entry.extraMaterials : []
     };
   }
 
+  /**
+   * Estime 1 pack directement depuis une entrée Lookup + la map Craft/Recipes.
+   */
   function estimatePackFromLookup(packName, lookupMap, recipesMap) {
     if (!lookupMap) return null;
     const entry = resolveLookupEntry(packName, lookupMap);
@@ -443,6 +452,9 @@
     }
     if (entry.hasBlankTradeCertificate) {
       extraItems.push({ name: "Blank Trade Certificate", qty: 1 });
+    }
+    if (entry.sweetgrassPowder > 0) {
+      extraItems.push({ name: "Sweetgrass Powder", qty: entry.sweetgrassPowder });
     }
 
     const base = estimateSinglePack(
@@ -462,7 +474,8 @@
       lookupCost: entry.cost,
       lookupPackingCost: entry.packingCost,
       hasArcaneSealedChest: entry.hasArcaneSealedChest,
-      hasBlankTradeCertificate: entry.hasBlankTradeCertificate
+      hasBlankTradeCertificate: entry.hasBlankTradeCertificate,
+      sweetgrassPowder: entry.sweetgrassPowder
     };
   }
 
