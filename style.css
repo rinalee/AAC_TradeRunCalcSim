@@ -1405,3 +1405,147 @@ select:focus, input[type="text"]:focus {
   font-size: 0.75rem;
   color: var(--text-secondary);
 }
+
+/* === Tool Update / Patch Note Modal === */
+.patch-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(3px);
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.patch-modal-backdrop.is-open {
+  display: flex;
+}
+
+.patch-modal-box {
+  width: 100%;
+  max-width: 660px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 20px 54px rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+}
+
+.patch-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--bg-row);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.patch-modal-eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+
+.patch-modal-title {
+  font-size: 1.15rem;
+  font-weight: normal;
+  color: var(--text-primary);
+}
+
+.patch-modal-close {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.patch-modal-close:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--bg-row-hover);
+}
+
+.patch-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.patch-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.patch-modal-body::-webkit-scrollbar-track {
+  background: var(--bg-void);
+}
+
+.patch-modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+}
+
+.patch-modal-section-title {
+  font-size: 1rem;
+  font-weight: normal;
+  color: var(--gold);
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.patch-list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.patch-list ul {
+  padding-left: 18px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-secondary);
+}
+
+.patch-list ul ul {
+  color: var(--text-primary);
+}
+
+.patch-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--bg-row);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.patch-dont-show {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.patch-dont-show input[type="checkbox"] {
+  accent-color: var(--gold);
+  cursor: pointer;
+}
