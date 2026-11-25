@@ -325,5 +325,113 @@
 
   <script src="crafting-estimator.js"></script>
   <script src="app.js"></script>
+<!-- Floating Tool Update / Patch Note Modal -->
+  <div id="patchNoteModal" class="patch-modal-backdrop is-open" role="dialog" aria-modal="true" aria-labelledby="patchNoteTitle">
+    <div class="patch-modal-box">
+      <div class="patch-modal-header">
+        <div>
+          <div class="patch-modal-eyebrow">Tool Update</div>
+          <h2 id="patchNoteTitle" class="patch-modal-title">Tool Update :</h2>
+        </div>
+        <button type="button" id="patchNoteCloseBtn" class="patch-modal-close" title="Close" aria-label="Close patch notes">✕</button>
+      </div>
+
+      <div class="patch-modal-body">
+        <h3 class="patch-modal-section-title">Items / Trade</h3>
+
+        <ul class="patch-list">
+          <li>Reduced the number of Raw Pelts required to craft Standard Leather from 15 to 6.</li>
+          <li>Reduced the number of Bone Chips(Typo revised) required to craft Standard Bonecraft from 15 to 6.</li>
+          <li>
+            Added new Trade Goods.
+            <ul>
+              <li>
+                12 Loot Trade Goods
+                <ul>
+                  <li>Natural Crude Fur Bundle, Recycled Cloth Bundle, Captured Leopard Battalion Mark Crate, Rust-Cleaned Compass Crate, Hardened Fang Crate, Captured Lycaon Battalion Mark Crate, Sealed Soul Fragment Crate, Captured Gargoyle Battalion Mark Crate, Frosted Scale Crate, Recovered Soldier Keepsake Crate, Purified Ritual Mask Crate, Recycled Scrap Metal Sack</li>
+                </ul>
+              </li>
+              <li>
+                6 new Tempering Stone Trade Goods
+                <ul>
+                  <li>Faint, Vivid, and Brilliant Weapon/Armor Tempering Stone Bundles</li>
+                  <li>The 6 existing Tempering Stone Chest Trade Goods can no longer be crafted. Any you already have can still be sold for their original rewards.</li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+
+      <div class="patch-modal-footer">
+        <label class="patch-dont-show">
+          <input type="checkbox" id="patchDontShowAgain" />
+          <span>Don't show this update again</span>
+        </label>
+        <button type="button" id="patchNoteConfirmBtn" class="btn-ghost">Close</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    (function () {
+      const PATCH_ID = "items-trade-update-1";
+      const STORAGE_KEY = "aac_tp_patch_dismissed_" + PATCH_ID;
+
+      const modal = document.getElementById("patchNoteModal");
+      const closeBtn = document.getElementById("patchNoteCloseBtn");
+      const confirmBtn = document.getElementById("patchNoteConfirmBtn");
+      const openBtn = document.getElementById("patchNoteOpenBtn");
+      const dontShowCheckbox = document.getElementById("patchDontShowAgain");
+
+      if (!modal) return;
+
+      function openModal() {
+        modal.classList.add("is-open");
+      }
+
+      function closeModal() {
+        if (dontShowCheckbox && dontShowCheckbox.checked) {
+          try {
+            localStorage.setItem(STORAGE_KEY, "1");
+          } catch (_) {}
+        }
+        modal.classList.remove("is-open");
+      }
+
+      let isDismissed = false;
+      try {
+        isDismissed = localStorage.getItem(STORAGE_KEY) === "1";
+      } catch (_) {}
+
+      if (isDismissed) {
+        modal.classList.remove("is-open");
+      } else {
+        openModal();
+      }
+
+      if (closeBtn) closeBtn.addEventListener("click", closeModal);
+      if (confirmBtn) confirmBtn.addEventListener("click", closeModal);
+      if (openBtn) {
+        openBtn.addEventListener("click", function () {
+          if (dontShowCheckbox) dontShowCheckbox.checked = false;
+          openModal();
+        });
+      }
+
+      modal.addEventListener("click", function (event) {
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && modal.classList.contains("is-open")) {
+          closeModal();
+        }
+      });
+    })();
+  </script>
+  
 </body>
 </html>
