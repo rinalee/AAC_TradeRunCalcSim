@@ -206,8 +206,8 @@ function parseLookupTable(rows) {
     }
 
     const region = (r[1] || "").trim();
-    // Lookup schema:
-    // C Cost | D Packing Cost | E Material 1 | F Quantity | G Arcane Sealed Chest (0/1) | H Blank Trade Certificate (0/1)
+// Lookup schema:
+    // C Cost | D Packing Cost | E Material 1 | F Quantity | G Arcane Sealed Chest (0/1) | H Blank Trade Certificate (0/1) | I Sweetgrass Powder (qty)
     const costGold = parseGoldNumber(r[2] || "");
     const packingCostGold = parseGoldNumber(r[3] || "");
 
@@ -222,6 +222,8 @@ function parseLookupTable(rows) {
     const matQty = matQtyRaw ? (parseInt(matQtyRaw, 10) || null) : null;
     const needsArcane = String(r[6] || "").trim() === "1";
     const needsBlankCert = String(r[7] || "").trim() === "1";
+    const sweetgrassQtyRaw = (r[8] || "").trim();
+    const sweetgrassQty = sweetgrassQtyRaw ? (parseInt(sweetgrassQtyRaw, 10) || 0) : 0;
 
     let buyPriceGold = null;
     let costSource = null;
@@ -245,6 +247,9 @@ function parseLookupTable(rows) {
     }
     if (needsBlankCert) {
       materials.push({ name: "Blank Trade Certificate", qty: 1 });
+    }
+    if (sweetgrassQty > 0) {
+      materials.push({ name: "Sweetgrass Powder", qty: sweetgrassQty });
     }
 
     const entry = {
